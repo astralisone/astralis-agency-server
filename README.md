@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="https://avatars.githubusercontent.com/u/6515805?s=400&u=f8a24666d0e320909e06274087574e29fa33bcfc&v=4" alt="Profile Picture" width="200" />
+</p>
+
 # Astralis Agency Client
 
 This project houses the source cfode for the  Astralis Agency website. It's built using [React](https://reactjs.org/)
