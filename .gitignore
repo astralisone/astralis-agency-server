@@ -1,0 +1,8 @@
+.codegpt
+node_modules
+.env
+.env 2
+astralis-server.pem
+.bolt/
+*/dist
+.vscode/settings.json
