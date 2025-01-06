@@ -1,0 +1,18 @@
+# Astralis Agency Client
+
+This project houses the front-end client for Astralis Agency. It's built using [React](https://reactjs.org/) (mention other key technologies or frameworks if used, e.g., TypeScript, Next.js, Redux).
+
+## Getting Started
+
+These instructions will get you a copy of the project up and running on your local machine for development and testing purposes.
+
+### Prerequisites
+
+* **Node.js and npm (or yarn):** Make sure you have Node.js and npm (or yarn) installed.  You can download them from [nodejs.org](https://nodejs.org/).
+
+### Installing
+
+1. **Clone the repository:**
+
+   ```bash
+   git clone https://github.com/your-username/your-repo-name.git  # Replace with your actual repo URL
