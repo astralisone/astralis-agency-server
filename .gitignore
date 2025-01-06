@@ -5,4 +5,4 @@ node_modules
 astralis-server.pem
 .bolt/
 */dist
-.vscode/settings.json
+.vscode/
