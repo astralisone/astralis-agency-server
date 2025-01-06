@@ -41,6 +41,9 @@ Navigate to the project directory:
 
 - github  auto deploy on pr merge
 
+### Connecting With SSH 
+use the astralis-server.pem and conect using the ubuntu user
+
 ### Contributing
 If you'd like to contribute to this project, please follow these guidelines:
 
