@@ -13,11 +13,11 @@ export default defineConfig({
     proxy: {
 
       "/index.html": {
-        target: "http://localhost:5000/",
+        target: "http://localhost:3000/",
         changeOrigin: true,
       },
       "/api": {
-        target: "http://localhost:5000",
+        target: "http://localhost:3000",
         changeOrigin: true,
       },
     },

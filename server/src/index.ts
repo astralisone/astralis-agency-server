@@ -3,6 +3,7 @@ import cors from 'cors';
 import dotenv from 'dotenv';
 import { router as apiRouter } from './routes';
 import { errorHandler } from './middleware/error';
+import contactRoutes from './routes/contact';
 
 dotenv.config();
 
@@ -14,6 +15,7 @@ app.use(express.json());
 
 // API routes
 app.use('/api', apiRouter);
+app.use('/api/contact', contactRoutes);
 
 // Error handling
 app.use(errorHandler);

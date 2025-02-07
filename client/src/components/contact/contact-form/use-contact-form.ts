@@ -1,43 +1,102 @@
 "use client"
 
-import { useState } from "react"
-import { useForm } from "react-hook-form"
-import { zodResolver } from "@hookform/resolvers/zod"
+import { useState, ChangeEvent, FormEvent } from "react"
 import { useToast } from "@/components/ui/use-toast"
-import { contactFormSchema, type ContactFormData } from "./types"
+
+interface FormData {
+  name: string
+  email: string
+  message: string
+}
+
+interface FormErrors {
+  name?: string
+  email?: string
+  message?: string
+}
 
 export function useContactForm() {
-  const [isSubmitting, setIsSubmitting] = useState(false)
   const { toast } = useToast()
-
-  const form = useForm<ContactFormData>({
-    resolver: zodResolver(contactFormSchema),
-    defaultValues: {
-      name: "",
-      email: "",
-      message: "",
-    },
+  const [formData, setFormData] = useState<FormData>({
+    name: "",
+    email: "",
+    message: "",
   })
+  const [errors, setErrors] = useState<FormErrors>({})
+  const [isSubmitting, setIsSubmitting] = useState(false)
 
-  async function onSubmit(values: ContactFormData) {
+  const validateForm = (): boolean => {
+    const newErrors: FormErrors = {}
+
+    if (!formData.name.trim()) {
+      newErrors.name = "Name is required"
+    }
+
+    if (!formData.email.trim()) {
+      newErrors.email = "Email is required"
+    } else if (!/\S+@\S+\.\S+/.test(formData.email)) {
+      newErrors.email = "Please enter a valid email address"
+    }
+
+    if (!formData.message.trim()) {
+      newErrors.message = "Message is required"
+    }
+
+    setErrors(newErrors)
+    return Object.keys(newErrors).length === 0
+  }
+
+  const handleChange = (
+    e: ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
+  ) => {
+    const { name, value } = e.target
+    setFormData((prev) => ({
+      ...prev,
+      [name]: value,
+    }))
+  }
+
+  const handleSubmit = async (e: FormEvent) => {
+    e.preventDefault()
+
+    if (!validateForm()) return
+
     setIsSubmitting(true)
-    console.log('TODO: Send message to server', JSON.stringify(values))
-    alert('TODO: Send message to server');
+
     try {
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1000))
-      
-      toast({
-        title: "Message sent!",
-        description: "We'll get back to you as soon as possible.",
+      const response = await fetch("/api/contact/submit", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(formData),
       })
-      
-      form.reset()
+
+      const data = await response.json()
+
+      if (!response.ok) {
+        throw new Error(data.error || "Failed to submit form")
+      }
+
+      toast({
+        title: "Success!",
+        description: "Thank you for your message. We will get back to you soon!",
+      })
+
+      // Reset form after successful submission
+      setFormData({
+        name: "",
+        email: "",
+        message: "",
+      })
     } catch (error) {
       toast({
-        title: "Error",
-        description: "Failed to send message. Please try again.",
         variant: "destructive",
+        title: "Error",
+        description:
+          error instanceof Error
+            ? error.message
+            : "An error occurred while submitting the form",
       })
     } finally {
       setIsSubmitting(false)
@@ -45,8 +104,10 @@ export function useContactForm() {
   }
 
   return {
-    form,
+    formData,
+    errors,
     isSubmitting,
-    onSubmit: form.handleSubmit(onSubmit),
+    handleChange,
+    handleSubmit,
   }
 }
