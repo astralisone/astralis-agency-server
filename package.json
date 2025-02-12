@@ -14,6 +14,7 @@
     "build:client": "cd client && npm install && npm run build",
     "build:server": "cd server && npm install && npx tsc",
     "start": "npm run start --workspace=server",
+    "start:prod": "NODE_ENV=production npm run start",
     "setup:db": "npm run setup:db --workspace=server",
     "deploy": "npm run deploy --workspace=server"
   },
