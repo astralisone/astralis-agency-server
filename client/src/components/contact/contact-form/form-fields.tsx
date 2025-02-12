@@ -4,16 +4,24 @@ import { Mail, MessageSquare, User } from "lucide-react"
 import { FormField, FormItem, FormLabel, FormControl, FormMessage } from "@/components/ui/form"
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
-import type { ContactFormData } from "./types"
-import type { UseFormReturn } from "react-hook-form"
+import { z } from "zod"
+import { UseFormReturn } from "react-hook-form"
+
+const formSchema = z.object({
+  name: z.string().min(1, "Name is required"),
+  email: z.string().email("Invalid email address"),
+  message: z.string().min(1, "Message is required"),
+})
+
+type FormData = z.infer<typeof formSchema>
 
 interface FormFieldsProps {
-  form: UseFormReturn<ContactFormData>
+  form: UseFormReturn<FormData>
 }
 
 export function FormFields({ form }: FormFieldsProps) {
   return (
-    <>
+    <div className="space-y-4">
       <FormField
         control={form.control}
         name="name"
@@ -66,6 +74,6 @@ export function FormFields({ form }: FormFieldsProps) {
           </FormItem>
         )}
       />
-    </>
+    </div>
   )
 }

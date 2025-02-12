@@ -2,12 +2,12 @@
 
 import { motion } from "framer-motion"
 import { Form } from "@/components/ui/form"
+import { Button } from "@/components/ui/button"
 import { FormFields } from "./form-fields"
-import { FormSubmit } from "./form-submit"
 import { useContactForm } from "./use-contact-form"
 
 export function ContactForm() {
-  const { form, isSubmitting, onSubmit } = useContactForm()
+  const { form, handleSubmit, isSubmitting } = useContactForm()
 
   return (
     <motion.div
@@ -18,9 +18,11 @@ export function ContactForm() {
     >
       <div className="rounded-lg border bg-card p-8">
         <Form {...form}>
-          <form onSubmit={onSubmit} className="space-y-6">
+          <form onSubmit={handleSubmit} className="space-y-6">
             <FormFields form={form} />
-            <FormSubmit isSubmitting={isSubmitting} />
+            <Button type="submit" className="w-full" disabled={isSubmitting}>
+              {isSubmitting ? "Sending..." : "Send Message"}
+            </Button>
           </form>
         </Form>
       </div>

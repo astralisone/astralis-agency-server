@@ -1,51 +1,32 @@
-import { Router, Request, Response } from 'express';
-import nodemailer from 'nodemailer';
+import express from 'express';
+import { ContactForm } from '../models/ContactForm';
+import { sendContactFormEmail } from '../services/email';
 
-const router = Router();
+const router = express.Router();
 
-interface ContactFormData {
-  name: string;
-  email: string;
-  message: string;
-}
-
-// Configure nodemailer
-const transporter = nodemailer.createTransport({
-  service: 'gmail',
-  auth: {
-    user: process.env.EMAIL_USER,
-    pass: process.env.EMAIL_APP_PASSWORD
-  }
-});
-
-router.post('/submit', async (req: Request<{}, {}, ContactFormData>, res: Response) => {
+router.post('/submit', async (req, res) => {
   try {
     const { name, email, message } = req.body;
 
-    // Validate input
-    if (!name || !email || !message) {
-      return res.status(400).json({ error: 'All fields are required' });
-    }
+    // Create new contact form entry
+    const contactForm = await ContactForm.create({
+      name,
+      email,
+      message,
+    });
 
-    // Email content
-    const mailOptions = {
-      from: process.env.EMAIL_USER,
-      to: process.env.CONTACT_EMAIL_RECIPIENT,
-      subject: `New Contact Form Submission from ${name}`,
-      text: `
-        Name: ${name}
-        Email: ${email}
-        Message: ${message}
-      `
-    };
+    // Send email notification
+    await sendContactFormEmail(contactForm);
 
-    // Send email
-    await transporter.sendMail(mailOptions);
-
-    res.status(200).json({ message: 'Contact form submitted successfully' });
+    res.status(201).json({
+      message: 'Contact form submitted successfully',
+      data: contactForm,
+    });
   } catch (error) {
-    console.error('Contact form error:', error);
-    res.status(500).json({ error: 'Failed to submit contact form' });
+    console.error('Contact form submission failed:', error);
+    res.status(500).json({
+      error: 'Failed to submit contact form',
+    });
   }
 });
 
