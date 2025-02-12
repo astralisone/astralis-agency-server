@@ -7,16 +7,18 @@
     "server"
   ],
   "scripts": {
-    "dev": "concurrently \"npm run dev:client\" \"npm run dev:server\"",
-    "dev:client": "npm run dev --workspace=client",
-    "dev:server": "npm run dev --workspace=server",
-    "build": "npm run build:client && npm run build:server",
-    "build:client": "cd client && npm install && npm run build",
+    "dev": "concurrently \"yarn dev:client\" \"yarn dev:server\"",
+    "dev:client": "yarn dev --workspace=client",
+    "dev:server": "yarn dev --workspace=server",
+    "build": "yarn build:client && yarn build:server",
+    "build:client": "cd client && npm install && yarn build",
     "build:server": "cd server && npm install && npx tsc",
-    "start": "npm run start --workspace=server",
-    "start:prod": "NODE_ENV=production npm run start",
-    "setup:db": "npm run setup:db --workspace=server",
-    "deploy": "npm run deploy --workspace=server"
+    "start": "yarn start --workspace=server",
+    "start:prod": "NODE_ENV=production yarn start",
+    "setup:db": "yarn setup:db --workspace=server",
+    "deploy:client": "cd client && yarn deploy",
+    "deploy:server": "cd server && yarn deploy",
+    "deploy": "yarn deploy:client && yarn deploy:server"
   },
   "devDependencies": {
     "concurrently": "^8.2.2",
