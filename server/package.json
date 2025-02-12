@@ -1,15 +1,17 @@
 {
   "name": "astralis-server",
   "version": "1.0.0",
+  "type": "module",
   "main": "dist/index.js",
   "scripts": {
-    "start": "node dist/index.js",
-    "dev": "nodemon src/index.ts",
-    "build": "tsc",
+    "start": "node --experimental-specifier-resolution=node dist/index.js",
+    "dev": "nodemon --experimental-specifier-resolution=node --loader ts-node/esm src/index.ts",
+    "build": "tsc --outDir dist",
+    "clean": "rm -rf dist",
     "lint": "eslint . --ext .ts",
-    "setup:db": "ts-node src/scripts/setupDb.ts",
-    "setup:prod": "ts-node src/scripts/setupProdDb.ts",
-    "deploy": "doctl apps create-deployment ef379f4b-ac1a-4752-814c-ae2281f15619"
+    "setup:db": "ts-node-esm src/scripts/setupDb.ts",
+    "setup:prod": "ts-node-esm src/scripts/setupProdDb.ts",
+    "deploy": "yarn clean && yarn build && doctl apps create-deployment ef379f4b-ac1a-4752-814c-ae2281f15619"
   },
   "dependencies": {
     "cors": "^2.8.5",

@@ -1,5 +1,5 @@
 import nodemailer, { Transporter } from 'nodemailer';
-import { ContactForm } from '../models/ContactForm';
+import { ContactForm } from '../models/ContactForm.js';
 
 const transporter: Transporter = nodemailer.createTransport({
   service: 'gmail',

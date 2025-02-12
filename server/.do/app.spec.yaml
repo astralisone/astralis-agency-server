@@ -5,8 +5,8 @@ services:
       repo: astralisone/astralis-agency
       branch: main
       deploy_on_push: true
-    # build_command: yarn install && yarn build
-    run_command: yarn start:prod
+    build_command: yarn install && yarn build
+    run_command: node --experimental-specifier-resolution=node dist/index.js
     environment_slug: node-js
     instance_size_slug: basic-xxs
     instance_count: 1
@@ -15,8 +15,8 @@ services:
         value: production
       - key: PORT
         value: "3001"
-      - key: MONGODB_URI
-        value: ${MONGODB_URI}
+      - key: DATABASE_URL
+        value: ${DATABASE_URL}
         type: SECRET
       - key: EMAIL_USER
         value: ${EMAIL_USER}

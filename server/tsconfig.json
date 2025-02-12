@@ -2,17 +2,19 @@
   "compilerOptions": {
     "outDir": "./dist",   // Make sure this points to 'dist'
     "rootDir": "./src",   // Source files should be under 'src'
-    "module": "commonjs",
-    "target": "es6",
-    "lib": ["es6"],
+    "module": "ESNext",
+    "target": "ES2020",
+    "lib": ["ES2020"],
+    "moduleResolution": "node",
     "allowJs": true,
 
     "strict": false,
     "noImplicitAny": true,
     "esModuleInterop": true,
     "resolveJsonModule": true,
-    "types": ["node"],
-    "skipLibCheck": true
+    "skipLibCheck": true,
+    "forceConsistentCasingInFileNames": true,
+    "isolatedModules": true
   },
   "include": ["src/**/*"],
   "exclude": ["node_modules", "dist"]

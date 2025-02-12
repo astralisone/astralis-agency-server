@@ -8,21 +8,20 @@
   ],
   "scripts": {
     "dev": "concurrently \"yarn dev:client\" \"yarn dev:server\"",
-    "dev:client": "yarn dev --workspace=client",
-    "dev:server": "yarn dev --workspace=server",
+    "dev:client": "cd client && yarn dev",
+    "dev:server": "cd server && yarn dev",
     "build": "yarn build:client && yarn build:server",
-    "build:client": "cd client && npm install && yarn build",
-    "build:server": "cd server && npm install && npx tsc",
+    "build:client": "cd client && yarn install && yarn build",
+    "build:server": "cd server && yarn install && yarn clean && yarn build",
     "start": "cd server && yarn start",
-    "start:prod": "NODE_ENV=production yarn start",
-    "setup:db": "yarn setup:db --workspace=server",
+    "start:prod": "NODE_ENV=production cd server && yarn start",
+    "setup:db": "cd server && yarn setup:db",
+    "deploy": "yarn build && yarn deploy:client && yarn deploy:server",
     "deploy:client": "cd client && yarn deploy",
-    "deploy:server": "cd server && yarn deploy",
-    "deploy": "yarn deploy:client && yarn deploy:server"
+    "deploy:server": "cd server && yarn deploy"
   },
   "devDependencies": {
-    "concurrently": "^8.2.2",
-    "typescript": "^5.0.3"
+    "concurrently": "^8.2.2"
   },
   "dependencies": {
     "@hookform/resolvers": "^4.0.0",

@@ -1,11 +1,14 @@
 {
+  "include": ["src"],
+  "exclude": ["node_modules", "dist"],
   "compilerOptions": {
-    "target": "ES2020",
+    "outDir": "./dist",   // Make sure this points to 'dist'
+    "rootDir": "./src",   // Source files should be under 'src'
+    "module": "commonjs",
+    "target": "es6",
     "useDefineForClassFields": true,
     "lib": ["ES2020", "DOM", "DOM.Iterable"],
-    "module": "ESNext",
     "skipLibCheck": true,
-    "moduleResolution": "bundler",
     "allowImportingTsExtensions": true,
     "resolveJsonModule": true,
     "isolatedModules": true,
@@ -20,6 +23,5 @@
       "@/*": ["./src/*"]
     }
   },
-  "include": ["src"],
-  "references": [{ "path": "./tsconfig.node.json" }]
+  
 }
