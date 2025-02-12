@@ -13,7 +13,7 @@
     "build": "yarn build:client && yarn build:server",
     "build:client": "cd client && npm install && yarn build",
     "build:server": "cd server && npm install && npx tsc",
-    "start": "yarn start --workspace=server",
+    "start": "cd server && yarn start",
     "start:prod": "NODE_ENV=production yarn start",
     "setup:db": "yarn setup:db --workspace=server",
     "deploy:client": "cd client && yarn deploy",
