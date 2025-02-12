@@ -5,7 +5,7 @@ services:
       repo: astralisone/astralis-agency
       branch: main
       deploy_on_push: true
-    build_command: yarn install && yarn build
+    # build_command: yarn install && yarn build
     run_command: yarn start:prod
     environment_slug: node-js
     instance_size_slug: basic-xxs
