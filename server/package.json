@@ -5,10 +5,8 @@
   "scripts": {
     "start": "node dist/index.js",
     "dev": "nodemon src/index.ts",
-    "build": "npx tsc",
-    "build:client": "cd ../client && npm install && npm run build",
+    "build": "tsc",
     "lint": "eslint . --ext .ts",
-    "setup": "ts-node src/scripts/setup.ts",
     "setup:db": "ts-node src/scripts/setupDb.ts",
     "setup:prod": "ts-node src/scripts/setupProdDb.ts",
     "deploy": "doctl apps create-deployment ef379f4b-ac1a-4752-814c-ae2281f15619"

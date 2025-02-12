@@ -1,11 +1,12 @@
 {
   "compilerOptions": {
-    "target": "es2017",
+    "outDir": "./dist",   // Make sure this points to 'dist'
+    "rootDir": "./src",   // Source files should be under 'src'
     "module": "commonjs",
+    "target": "es6",
     "lib": ["es6"],
     "allowJs": true,
-    "outDir": "dist",
-    "rootDir": "src",
+
     "strict": false,
     "noImplicitAny": true,
     "esModuleInterop": true,
