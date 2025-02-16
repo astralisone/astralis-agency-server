@@ -3,10 +3,10 @@ FROM node:18-alpine
 WORKDIR /app/server
 
 # Copy package files
-COPY server/package.json server/yarn.lock ./
+COPY server/package.json ./
 
-# Install dependencies
-RUN yarn install --frozen-lockfile
+# Install dependencies and create yarn.lock
+RUN yarn install
 
 # Copy source code
 COPY server/src ./src

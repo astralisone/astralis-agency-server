@@ -7,11 +7,8 @@ services:
       branch: main
       deploy_on_push: true
     build_command: cd server && yarn install && yarn build
-    run_command: >
-      cd server &&
-      yarn setup:db &&
-      yarn seed:db &&
-      yarn start:prod
+    run_command: cd server && yarn start:prod
+    source_dir: /
     envs:
       - key: NODE_ENV
         value: production
