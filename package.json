@@ -16,12 +16,7 @@
     "deploy": "yarn build && yarn deploy:prod",
     "logs": "yarn logs:prod"
   },
-  "devDependencies": {
-    "zod": "^3.24.2",
-    "doctl": "^1.92.1"
-  },
   "dependencies": {
-    "zod": "^3.24.2",
-    "doctl": "^1.92.1"
+    "zod": "^3.24.2"
   }
 }

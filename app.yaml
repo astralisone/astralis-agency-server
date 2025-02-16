@@ -10,7 +10,7 @@ services:
     run_command: >
       yarn workspace server setup:db &&
       yarn workspace server seed:db &&
-      yarn workspace server start
+      yarn workspace server start:prod
     envs:
       - key: NODE_ENV
         value: production
