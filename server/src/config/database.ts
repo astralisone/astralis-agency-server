@@ -12,9 +12,21 @@ dotenv.config({ path: path.join(__dirname, '../../../.env') });
 
 // Construct database URL with proper handling of empty password
 const constructDbUrl = () => {
+  // If DATABASE_URL is provided, use it
+  if (process.env.DATABASE_URL) {
+    return process.env.DATABASE_URL;
+  }
+
   const { DB_USER, DB_PASSWORD, DB_HOST, DB_PORT, DB_NAME } = process.env;
   
   if (!DB_USER || !DB_HOST || !DB_PORT || !DB_NAME) {
+    console.error('Missing database configuration:', {
+      DB_USER,
+      DB_HOST,
+      DB_PORT,
+      DB_NAME,
+      // Don't log password
+    });
     throw new Error('Missing required database configuration');
   }
 
@@ -25,8 +37,8 @@ const constructDbUrl = () => {
 
 const dbUrl = constructDbUrl();
 
-// Log configuration for debugging
-console.log('Environment Variables:', {
+// Log configuration for debugging (mask sensitive data)
+console.log('Database Configuration:', {
   NODE_ENV: process.env.NODE_ENV || 'development',
   DB_HOST: process.env.DB_HOST,
   DB_PORT: process.env.DB_PORT,
