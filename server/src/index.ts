@@ -6,7 +6,7 @@ import { fileURLToPath } from 'url';
 import { dirname } from 'path';
 import { Sequelize } from 'sequelize';
 import contactRoutes from './routes/contact.js';
-import productRoutes from './routes/productRoutes';
+import productRoutes from './routes/products.js';
 import healthRoutes from './routes/health.js';
 
 const __filename = fileURLToPath(import.meta.url);

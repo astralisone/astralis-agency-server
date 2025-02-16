@@ -8,12 +8,15 @@ COPY server/package.json ./
 # Install dependencies and create yarn.lock
 RUN yarn install
 
-# Copy source code
+# Copy all source code
 COPY server/src ./src
 COPY server/tsconfig.json ./
 
 # Build
 RUN yarn build
+
+# Verify the build output
+RUN ls -la dist/routes/
 
 # Set environment variables
 ENV NODE_ENV=production
