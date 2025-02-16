@@ -6,25 +6,27 @@ import { fileURLToPath } from 'url';
 import { dirname } from 'path';
 import { Sequelize } from 'sequelize';
 import contactRoutes from './routes/contact.js';
+import productRoutes from './routes/productRoutes';
+import healthRoutes from './routes/health.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
-dotenv.config();
+dotenv.config({ path: path.join(__dirname, '../../.env') });
 
 const app = express();
 const PORT = process.env.PORT || 3001;
 
+// Verify the DATABASE_URL is loaded
+console.log('Database URL:', process.env.DATABASE_URL);
+
 // Database connection
-const sequelize = new Sequelize(process.env.DATABASE_URL!, {
+const sequelize = new Sequelize(process.env.DATABASE_URL as string, {
   dialect: 'postgres',
   ssl: process.env.NODE_ENV === 'production',
-  dialectOptions: process.env.NODE_ENV === 'production' ? {
-    ssl: {
-      require: true,
-      rejectUnauthorized: false
-    }
-  } : {}
+  dialectOptions: {
+    ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false
+  }
 });
 
 // Test database connection
@@ -42,6 +44,8 @@ app.use(express.urlencoded({ extended: true }));
 
 // API Routes
 app.use('/api/contact', contactRoutes);
+app.use('/api/products', productRoutes);
+app.use('/api/health', healthRoutes);
 
 // Health check endpoint
 app.get('/api/health', (req, res) => {
@@ -62,13 +66,30 @@ app.get('*', (req, res) => {
 });
 
 // Error handling middleware
-app.use((err: Error, req: express.Request, res: express.Response, next: express.NextFunction) => {
-  console.error(err.stack);
-  res.status(500).json({ error: 'Something went wrong!' });
+app.use((err: any, req: express.Request, res: express.Response, next: express.NextFunction) => {
+  console.error('Error:', err);
+  res.status(500).json({ error: 'Internal server error' });
 });
 
-app.listen(PORT, () => {
-  console.log(`Server is running on port ${PORT}`);
+// Graceful shutdown
+const shutdown = async () => {
+  console.log('Shutting down gracefully...');
+  try {
+    await sequelize.close();
+    console.log('Database connections closed.');
+    process.exit(0);
+  } catch (err) {
+    console.error('Error during shutdown:', err);
+    process.exit(1);
+  }
+};
+
+process.on('SIGTERM', shutdown);
+process.on('SIGINT', shutdown);
+
+// Start server
+const server = app.listen(PORT, () => {
+  console.log(`Server running on port ${PORT}`);
 });
 
 export default app; 

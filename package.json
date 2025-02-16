@@ -3,29 +3,23 @@
   "version": "1.0.0",
   "private": true,
   "workspaces": [
-    "client",
     "server"
   ],
   "scripts": {
-    "dev": "concurrently \"yarn dev:client\" \"yarn dev:server\"",
-    "dev:client": "cd client && yarn dev",
-    "dev:server": "cd server && yarn dev",
-    "build": "yarn build:client && yarn build:server",
-    "build:client": "cd client && yarn install && yarn build",
-    "build:server": "cd server && yarn install && yarn clean && yarn build",
-    "start": "cd server && yarn start",
-    "start:prod": "NODE_ENV=production cd server && yarn start",
-    "setup:db": "cd server && yarn setup:db",
-    "deploy": "yarn build && yarn deploy:client && yarn deploy:server",
-    "deploy:client": "cd client && yarn deploy",
-    "deploy:server": "cd server && yarn deploy"
+    "start": "yarn workspace server start",
+    "dev": "yarn workspace server dev",
+    "build": "yarn workspace server build",
+    "deploy:prod": "doctl apps create-deployment ef379f4b-ac1a-4752-814c-ae2281f15619 --wait",
+    "deploy:staging": "doctl apps create-deployment YOUR_STAGING_APP_ID --wait",
+    "logs:prod": "doctl apps logs ef379f4b-ac1a-4752-814c-ae2281f15619",
+    "logs:staging": "doctl apps logs YOUR_STAGING_APP_ID",
+    "deploy": "yarn build && yarn deploy:prod",
+    "logs": "yarn logs:prod"
   },
   "devDependencies": {
-    "concurrently": "^8.2.2"
+    "doctl": "^1.92.1"
   },
   "dependencies": {
-    "@hookform/resolvers": "^4.0.0",
-    "react-hook-form": "^7.54.2",
     "zod": "^3.24.2"
   }
 }

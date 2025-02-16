@@ -1,26 +1,43 @@
 version: '3.8'
 
 services:
-  server:
-    build: ./server
+  app:
+    build: 
+      context: .
+      dockerfile: Dockerfile
     ports:
       - "3001:3001"
     environment:
-      - NODE_ENV=production
+      - NODE_ENV=development
       - PORT=3001
-      - MONGODB_URI=${MONGODB_URI}
-      - EMAIL_USER=${EMAIL_USER}
-      - EMAIL_APP_PASSWORD=${EMAIL_APP_PASSWORD}
-      - CONTACT_EMAIL_RECIPIENT=${CONTACT_EMAIL_RECIPIENT}
-    depends_on:
-      - mongodb
-
-  mongodb:
-    image: mongo:latest
-    ports:
-      - "27017:27017"
+      - DB_USER=postgres
+      - DB_PASSWORD=postgres
+      - DB_HOST=postgres
+      - DB_PORT=5432
+      - DB_NAME=astralis
     volumes:
-      - mongodb_data:/data/db
+      - ./server/src:/app/server/src
+      - ./server/node_modules:/app/server/node_modules
+    depends_on:
+      postgres:
+        condition: service_healthy
+    command: sh -c "yarn setup:db && yarn seed:db && yarn dev"
+
+  postgres:
+    image: postgres:14-alpine
+    ports:
+      - "5432:5432"
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+      - POSTGRES_DB=astralis
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
 
 volumes:
-  mongodb_data: 
+  postgres_data: 
