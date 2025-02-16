@@ -12,6 +12,9 @@ RUN yarn install
 COPY server/src ./src
 COPY server/tsconfig.json ./
 
+# List files to verify structure
+RUN ls -la src/routes/
+
 # Build
 RUN yarn build
 
