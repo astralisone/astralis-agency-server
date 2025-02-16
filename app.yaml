@@ -6,11 +6,12 @@ services:
       repo: your-github-username/astralis-agency
       branch: main
       deploy_on_push: true
-    build_command: yarn install && yarn workspace server build
+    build_command: cd server && yarn install && yarn build
     run_command: >
-      yarn workspace server setup:db &&
-      yarn workspace server seed:db &&
-      yarn workspace server start:prod
+      cd server &&
+      yarn setup:db &&
+      yarn seed:db &&
+      yarn start:prod
     envs:
       - key: NODE_ENV
         value: production

@@ -1,43 +1,26 @@
-# Build stage
-FROM node:18-alpine AS builder
-
-WORKDIR /app
-
-# Copy package files
-COPY package.json yarn.lock ./
-COPY server/package.json server/
-
-# Install ALL dependencies (including dev dependencies)
-RUN yarn install --frozen-lockfile
-
-# Copy server source code
-COPY server/ server/
-
-# Build the server
-RUN cd server && yarn build
-
-# Production stage
 FROM node:18-alpine
 
-WORKDIR /app
+WORKDIR /app/server
 
 # Copy package files
-COPY package.json yarn.lock ./
-COPY server/package.json server/
+COPY server/package.json server/yarn.lock ./
 
-# Install dependencies (including dev dependencies for now)
+# Install dependencies
 RUN yarn install --frozen-lockfile
 
-# Copy built files from builder stage
-COPY --from=builder /app/server/dist server/dist
-COPY server/src server/src
+# Copy source code
+COPY server/src ./src
+COPY server/tsconfig.json ./
+
+# Build
+RUN yarn build
 
 # Set environment variables
 ENV NODE_ENV=production
 ENV PORT=3001
 
-# Expose the port
+# Expose port
 EXPOSE 3001
 
 # Start the server
-CMD ["yarn", "workspace", "server", "start:prod"] 
+CMD ["yarn", "start:prod"] 
