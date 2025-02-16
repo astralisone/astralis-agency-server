@@ -6,7 +6,7 @@
     "server"
   ],
   "scripts": {
-    "start": "yarn workspace server start",
+    "start": "yarn && yarn workspace server start",
     "dev": "yarn workspace server dev",
     "build": "yarn workspace server build",
     "deploy:prod": "doctl apps create-deployment ef379f4b-ac1a-4752-814c-ae2281f15619 --wait",
