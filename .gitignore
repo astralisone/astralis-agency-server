@@ -1,8 +1,11 @@
 .codegpt
 node_modules
-.env
+.env*
 .env 2
 astralis-server.pem
 .bolt/
 */dist
 .vscode/
+build/
+client/dist/
+
