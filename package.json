@@ -10,7 +10,7 @@
     "start": "nodemon server.js",
     "start:prod":"yarn setup && yarn build && node server.js",
     "dev": "nodemon server.js",
-    "setup": "yarn install",
+    "setup": "yarn install ",
     "build": "yarn cleanup && cd client && yarn install && yarn build",
     "test": "jest",
     "test:watch": "jest --watch",

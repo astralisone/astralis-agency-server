@@ -6,6 +6,5 @@ astralis-server.pem
 .bolt/
 */dist
 .vscode/
-build/
 client/dist/
 
