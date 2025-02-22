@@ -1,6 +1,7 @@
 {
   "name": "astralis-agency",
   "version": "1.0.0",
+  "license":"UNLICENSED",
   "private": true,
   "workspaces": [
     "server"
