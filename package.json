@@ -9,12 +9,12 @@
     "server"
   ],
   "scripts": {
-    "prestart":"yarn setup && yarn build",
-    "start": "nodemon server.js",
-    "start:prod":"yarn setup && yarn build && node server.js",
+    "start": "node server.js",
+    "start:prod":"node server.js",
+    "build:client":"cd client && yarn build",
+    "build:server":"cd server && yarn build",
+    "build": "yarn build:client && yarn build:server",
     "dev": "nodemon server.js",
-    "setup": "yarn install ",
-    "build": "yarn cleanup && cd client && yarn install && yarn build",
     "test": "jest",
     "test:watch": "jest --watch",
     "cleanup": "rm -rf build && mkdir build && cd client && rm -rf dist",
