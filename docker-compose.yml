@@ -2,42 +2,33 @@ version: '3.8'
 
 services:
   app:
-    build: 
-      context: .
-      dockerfile: Dockerfile
+    build: .
+    container_name: astralis-agency-server
+    restart: always
     ports:
-      - "3001:3001"
-    environment:
-      - NODE_ENV=development
-      - PORT=3001
-      - DB_USER=postgres
-      - DB_PASSWORD=postgres
-      - DB_HOST=postgres
-      - DB_PORT=5432
-      - DB_NAME=astralis
-    volumes:
-      - ./server/src:/app/server/src
-      - ./server/node_modules:/app/server/node_modules
+      - "3000:3000"
     depends_on:
-      postgres:
-        condition: service_healthy
-    command: sh -c "yarn setup:db && yarn seed:db && yarn dev"
+      - db
+    environment:
+      NODE_ENV: production
+      DATABASE_URL: postgres://postgres:password@db:5432/astralis
+    volumes:
+      - .:/app
+      - /app/node_modules
+    command: ["yarn", "start:prod"]
 
-  postgres:
-    image: postgres:14-alpine
+  db:
+    image: postgres:15-alpine
+    container_name: postgres-db
+    restart: always
     ports:
       - "5432:5432"
     environment:
-      - POSTGRES_USER=postgres
-      - POSTGRES_PASSWORD=postgres
-      - POSTGRES_DB=astralis
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: astralis
     volumes:
       - postgres_data:/var/lib/postgresql/data
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres"]
-      interval: 5s
-      timeout: 5s
-      retries: 5
 
 volumes:
-  postgres_data: 
+  postgres_data:

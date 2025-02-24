@@ -1,32 +1,26 @@
-FROM node:18-alpine
+# Use an official Node.js runtime as a base image
+FROM node:20-alpine AS build
 
-WORKDIR /app/server
+# Set the working directory
+WORKDIR /app
 
-# Copy package files
-COPY server/package.json ./
+# Copy package.json and yarn.lock to leverage caching
+COPY package.json yarn.lock ./
 
-# Install dependencies and create yarn.lock
-RUN yarn install
+# Install dependencies
+RUN yarn install --frozen-lockfile
 
-# Copy all source code
-COPY server/src ./src
-COPY server/tsconfig.json ./
+# Copy the rest of the application code
+COPY . .
 
-# List files to verify structure
-RUN ls -la src/routes/
-
-# Build
+# Build the TypeScript project
 RUN yarn build
 
-# Verify the build output
-RUN ls -la dist/routes/
+# Expose the application's port (adjust if necessary)
+EXPOSE 3000
 
-# Set environment variables
+# Set environment variables (if needed)
 ENV NODE_ENV=production
-ENV PORT=3001
 
-# Expose port
-EXPOSE 3001
-
-# Start the server
-CMD ["yarn", "start:prod"] 
+# Command to start the application
+CMD ["yarn", "start:prod"]
