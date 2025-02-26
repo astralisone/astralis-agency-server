@@ -8,6 +8,7 @@ import { Sequelize } from 'sequelize';
 import contactRoutes from './routes/contact.js';
 import productRoutes from './routes/products.js';
 import healthRoutes from './routes/health.js';
+import authRoutes from './routes/auth.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -46,6 +47,7 @@ app.use(express.urlencoded({ extended: true }));
 app.use('/api/contact', contactRoutes);
 app.use('/api/products', productRoutes);
 app.use('/api/health', healthRoutes);
+app.use('/api/auth', authRoutes);
 
 // Health check endpoint
 app.get('/api/health', (req, res) => {

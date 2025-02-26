@@ -10,15 +10,19 @@
     "setup:db": "node --experimental-specifier-resolution=node --loader ts-node/esm src/scripts/setupDb.ts",
     "seed:db": "node --experimental-specifier-resolution=node --loader ts-node/esm src/scripts/seedProducts.ts",
     "db:fresh": "yarn setup:db && yarn seed:db",
+    "create:admin": "node --experimental-specifier-resolution=node --loader ts-node/esm src/scripts/createAdmin.ts",
+    "generate:jwt": "node --experimental-specifier-resolution=node --loader ts-node/esm src/scripts/generateJwtSecret.ts",
     "build": "tsc",
     "clean": "rm -rf dist",
     "test": "jest",
     "test:watch": "jest --watch"
   },
   "dependencies": {
+    "bcrypt": "^5.1.1",
     "cors": "^2.8.5",
     "dotenv": "^16.0.3",
     "express": "^4.18.2",
+    "jsonwebtoken": "^9.0.2",
     "nodemailer": "^6.10.0",
     "pg": "^8.11.3",
     "pg-hstore": "^2.3.4",
@@ -28,16 +32,18 @@
     "zod": "^3.24.2"
   },
   "devDependencies": {
+    "@types/bcrypt": "^5.0.2",
     "@types/cors": "^2.8.13",
     "@types/express": "^4.17.17",
+    "@types/jest": "^29.5.12",
+    "@types/jsonwebtoken": "^9.0.9",
     "@types/node": "^18.15.11",
     "@types/nodemailer": "^6.4.17",
     "@types/pg": "^8.11.0",
-    "@types/jest": "^29.5.12",
     "@types/supertest": "^6.0.2",
     "jest": "^29.7.0",
+    "nodemon": "^2.0.22",
     "supertest": "^6.3.4",
-    "ts-jest": "^29.1.2",
-    "nodemon": "^2.0.22"
+    "ts-jest": "^29.1.2"
   }
 }

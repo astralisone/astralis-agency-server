@@ -2,7 +2,7 @@
 
 import { Link } from "react-router-dom"
 import { useLocation } from "react-router-dom"
-import { Menu } from "lucide-react"
+import { Menu, LogIn, LogOut, User } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import {
   Sheet,
@@ -10,8 +10,18 @@ import {
   SheetTitle,
   SheetTrigger,
 } from "@/components/ui/sheet"
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { cn } from "@/lib/utils"
 import { CartSheet } from "@/components/cart/cart-sheet"
+import { useAuth } from "@/components/providers/auth-provider"
 
 const routes = [
   {
@@ -32,8 +42,24 @@ const routes = [
   },
 ]
 
+const adminRoutes = [
+  {
+    href: "/admin",
+    label: "Dashboard",
+  },
+  {
+    href: "/admin/marketplace",
+    label: "Marketplace",
+  },
+  {
+    href: "/admin/blog",
+    label: "Blog",
+  },
+]
+
 export function Navbar() {
   const location = useLocation()
+  const { user, isAuthenticated, isAdmin, logout } = useAuth()
 
   return (
     <header className="py-6 px-4 border-b border-muted/20">
@@ -55,10 +81,66 @@ export function Navbar() {
                 {route.label}
               </Link>
             ))}
+            {isAdmin && (
+              <Link
+                to="/admin"
+                className={cn(
+                  "text-sm font-medium transition-colors hover:text-primary",
+                  location.pathname.startsWith("/admin") ? "text-primary" : "text-muted-foreground"
+                )}
+              >
+                Admin
+              </Link>
+            )}
           </nav>
         </div>
         <div className="flex items-center gap-4">
           <CartSheet />
+          
+          {isAuthenticated ? (
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" size="icon" className="rounded-full">
+                  <Avatar className="h-8 w-8">
+                    <AvatarFallback>
+                      {user?.name?.charAt(0) || "U"}
+                    </AvatarFallback>
+                  </Avatar>
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuLabel>
+                  <div className="flex flex-col">
+                    <span>{user?.name}</span>
+                    <span className="text-xs text-muted-foreground">{user?.email}</span>
+                  </div>
+                </DropdownMenuLabel>
+                <DropdownMenuSeparator />
+                {isAdmin && (
+                  <>
+                    {adminRoutes.map((route) => (
+                      <DropdownMenuItem key={route.href} asChild>
+                        <Link to={route.href}>{route.label}</Link>
+                      </DropdownMenuItem>
+                    ))}
+                    <DropdownMenuSeparator />
+                  </>
+                )}
+                <DropdownMenuItem onClick={logout}>
+                  <LogOut className="mr-2 h-4 w-4" />
+                  <span>Logout</span>
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          ) : (
+            <Button variant="outline" size="sm" asChild>
+              <Link to="/login">
+                <LogIn className="mr-2 h-4 w-4" />
+                Login
+              </Link>
+            </Button>
+          )}
+          
           <Sheet>
             <SheetTrigger asChild>
               <Button variant="ghost" size="icon" className="md:hidden">
@@ -80,6 +162,30 @@ export function Navbar() {
                     {route.label}
                   </Link>
                 ))}
+                {isAdmin && (
+                  <Link
+                    to="/admin"
+                    className={cn(
+                      "text-sm font-medium transition-colors hover:text-primary p-2",
+                      location.pathname.startsWith("/admin") ? "text-primary" : "text-muted-foreground"
+                    )}
+                  >
+                    Admin
+                  </Link>
+                )}
+                {isAuthenticated ? (
+                  <Button variant="outline" size="sm" onClick={logout} className="mt-4">
+                    <LogOut className="mr-2 h-4 w-4" />
+                    Logout
+                  </Button>
+                ) : (
+                  <Link to="/login" className="mt-4">
+                    <Button variant="outline" size="sm" className="w-full">
+                      <LogIn className="mr-2 h-4 w-4" />
+                      Login
+                    </Button>
+                  </Link>
+                )}
               </nav>
             </SheetContent>
           </Sheet>

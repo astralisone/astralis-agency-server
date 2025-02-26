@@ -1,7 +1,7 @@
 import { HeroSection } from "@/components/sections/hero"
 import { ServicesSection } from "@/components/sections/services"
 import { PortfolioSection } from "@/components/sections/portfolio"
-import { TestimonialsSection } from "@/components/sections/testimonials"
+import { TestimonialSlider } from "@/components/sections/testimonials/testimonial-slider"
 import { CTASection } from "@/components/sections/cta"
 
 export function HomePage() {
@@ -10,7 +10,7 @@ export function HomePage() {
       <HeroSection />
       <ServicesSection />
       <PortfolioSection />
-      <TestimonialsSection />
+      <TestimonialSlider />
       <CTASection />
     </div>
   )

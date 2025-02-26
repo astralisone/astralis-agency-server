@@ -1,6 +1,7 @@
 {
   "name": "astralis-agency",
   "version": "1.0.0",
+  "type": "module",
   "license": "UNLICENSED",
   "private": true,
   "workspaces": [
@@ -8,21 +9,26 @@
     "server"
   ],
   "scripts": {
-    "start": "node server.js",
-    "start:prod": "node server.js",
+    "start": "node --experimental-specifier-resolution=node server.js",
+    "start:prod": "node --experimental-specifier-resolution=node server.js",
+    "generate:env": "node scripts/generate-client-env.js",
+    "generate:server-env": "node scripts/generate-server-env.js",
+    "prebuild:client": "yarn generate:env",
+    "prebuild:server": "yarn generate:server-env",
     "build:client": "cd client && yarn build",
     "build:server": "cd server && yarn build",
     "build": "yarn build:client && yarn build:server",
-    "dev": "PORT=4000 nodemon server.js",
-    "client:dev": "cd client && yarn dev",
-    "server:dev": "PORT=4000 nodemon server.js",
-    "dev:all": "concurrently \"PORT=4000 yarn server:dev\" \"yarn client:dev\"",
+    "dev": "yarn generate:server-env && PORT=4000 nodemon --experimental-specifier-resolution=node server.js",
+    "client:dev": "yarn generate:env && cd client && yarn dev",
+    "server:dev": "yarn generate:server-env && PORT=4000 nodemon --experimental-specifier-resolution=node server.js",
+    "dev:all": "concurrently \"yarn server:dev\" \"yarn client:dev\"",
     "test": "jest --config jest.config.js",
     "test:watch": "jest --config jest.config.js --watch",
     "test:coverage": "jest --config jest.config.js --coverage",
     "cleanup": "rm -rf build && mkdir build && cd client && rm -rf dist",
     "postbuild": "cp -r client/dist/* build/",
-    "seed": "ts-node prisma/seed.ts"
+    "seed": "ts-node prisma/seed.ts",
+    "create:admin": "node --experimental-specifier-resolution=node --loader ts-node/esm server/src/scripts/createAdmin.ts"
   },
   "dependencies": {
     "@prisma/client": "^6.4.1",

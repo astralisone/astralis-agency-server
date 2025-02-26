@@ -9,6 +9,9 @@ import { BlogPage } from "@/pages/Blog";
 import { ContactPage } from "@/pages/Contact";
 import { CheckoutPage } from "@/pages/checkout";
 import { BlogPostPage } from "@/pages/blog/[id]";
+import { LoginPage } from "@/pages/login";
+import { RegisterPage } from "@/pages/register";
+import { ProtectedRoute } from "@/components/auth/ProtectedRoute";
 
 // Admin Pages
 import { AdminDashboardPage } from "@/pages/admin";
@@ -37,21 +40,59 @@ function App() {
             <Route path="/blog/:id" element={<BlogPostPage />} />
             <Route path="/contact" element={<ContactPage />} />
             <Route path="/checkout" element={<CheckoutPage />} />
+            <Route path="/login" element={<LoginPage />} />
+            <Route path="/register" element={<RegisterPage />} />
             
-            {/* Admin Routes */}
-            <Route path="/admin" element={<AdminDashboardPage />} />
+            {/* Admin Routes - Protected */}
+            <Route path="/admin" element={
+              <ProtectedRoute requireAdmin={true}>
+                <AdminDashboardPage />
+              </ProtectedRoute>
+            } />
             
-            {/* Marketplace Admin Routes */}
-            <Route path="/admin/marketplace" element={<MarketplaceAdminPage />} />
-            <Route path="/admin/marketplace/new" element={<NewMarketplaceItemPage />} />
-            <Route path="/admin/marketplace/:id/edit" element={<EditMarketplaceItemPage />} />
+            {/* Marketplace Admin Routes - Protected */}
+            <Route path="/admin/marketplace" element={
+              <ProtectedRoute requireAdmin={true}>
+                <MarketplaceAdminPage />
+              </ProtectedRoute>
+            } />
+            <Route path="/admin/marketplace/new" element={
+              <ProtectedRoute requireAdmin={true}>
+                <NewMarketplaceItemPage />
+              </ProtectedRoute>
+            } />
+            <Route path="/admin/marketplace/:id/edit" element={
+              <ProtectedRoute requireAdmin={true}>
+                <EditMarketplaceItemPage />
+              </ProtectedRoute>
+            } />
             
-            {/* Blog Admin Routes */}
-            <Route path="/admin/blog" element={<BlogAdminPage />} />
-            <Route path="/admin/blog/new" element={<NewBlogPostPage />} />
-            <Route path="/admin/blog/:id/edit" element={<EditBlogPostPage />} />
-            <Route path="/admin/blog/categories" element={<BlogCategoriesPage />} />
-            <Route path="/admin/blog/tags" element={<BlogTagsPage />} />
+            {/* Blog Admin Routes - Protected */}
+            <Route path="/admin/blog" element={
+              <ProtectedRoute requireAdmin={true}>
+                <BlogAdminPage />
+              </ProtectedRoute>
+            } />
+            <Route path="/admin/blog/new" element={
+              <ProtectedRoute requireAdmin={true}>
+                <NewBlogPostPage />
+              </ProtectedRoute>
+            } />
+            <Route path="/admin/blog/:id/edit" element={
+              <ProtectedRoute requireAdmin={true}>
+                <EditBlogPostPage />
+              </ProtectedRoute>
+            } />
+            <Route path="/admin/blog/categories" element={
+              <ProtectedRoute requireAdmin={true}>
+                <BlogCategoriesPage />
+              </ProtectedRoute>
+            } />
+            <Route path="/admin/blog/tags" element={
+              <ProtectedRoute requireAdmin={true}>
+                <BlogTagsPage />
+              </ProtectedRoute>
+            } />
           </Routes>
         </main>
         <Footer />

@@ -2,6 +2,7 @@
 
 import { ThemeProvider } from "./theme-provider";
 import { PayPalProvider } from "./payment/paypal-provider";
+import { AuthProvider } from "./auth-provider";
 
 interface ProvidersProps {
   children: React.ReactNode;
@@ -10,7 +11,9 @@ interface ProvidersProps {
 export function Providers({ children }: ProvidersProps) {
   return (
     <ThemeProvider defaultTheme="dark" storageKey="nicol-theme">
-      <PayPalProvider>{children}</PayPalProvider>
+      <AuthProvider>
+        <PayPalProvider>{children}</PayPalProvider>
+      </AuthProvider>
     </ThemeProvider>
   );
 }
