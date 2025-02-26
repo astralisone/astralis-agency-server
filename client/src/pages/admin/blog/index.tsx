@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useApi, useApiMutation } from "@/hooks/useApi";
 import { AdminLayout } from "@/components/admin/AdminLayout";
 import { Button } from "@/components/ui/button";
@@ -75,47 +75,59 @@ export function BlogAdminPage() {
     error, 
     isLoading,
     refetch
-  } = useApi<{ data: { posts: BlogPost[], pagination: any } }>(`/blog?${queryString}`);
+  } = useApi<{ posts: BlogPost[], pagination: any }>(`/blog?${queryString}`);
 
   // Fetch categories for filter
   const { 
-    data: categoriesData 
-  } = useApi<{ data: Array<{ name: string, slug: string }> }>('/blog/categories');
-
-  // Setup delete mutation
-  const { 
-    mutate: deletePost, 
-    isLoading: isDeletingPost 
-  } = useApiMutation<any, any>(`/blog/${postToDelete?.id}`, {
-    onSuccess: () => {
-      setPostToDelete(null);
-      setDeleteSuccess("Post deleted successfully");
-      refetch();
-      
-      // Clear success message after 3 seconds
-      setTimeout(() => {
-        setDeleteSuccess(null);
-      }, 3000);
-    },
-    onError: (error) => {
-      setDeleteError(error.message || "Failed to delete post");
-      setPostToDelete(null);
-      
-      // Clear error message after 3 seconds
-      setTimeout(() => {
-        setDeleteError(null);
-      }, 3000);
-    },
-  });
+    data: categoriesData,
+    isLoading: categoriesLoading,
+    error: categoriesError
+  } = useApi<Array<{ id: string, name: string, slug: string, description: string, _count: { posts: number } }>>('/blog/categories');
 
   // Safely access posts and pagination with fallbacks
-  const posts = blogData?.data?.posts || [];
-  const pagination = blogData?.data?.pagination || { 
+  const posts = blogData?.posts || [];
+  const pagination = blogData?.pagination || { 
     page: 1, 
     totalPages: 1, 
     hasNextPage: false, 
     hasPrevPage: false 
   };
+
+  // Debug categories data whenever it changes
+  useEffect(() => {
+    console.log('BlogAdminPage - categoriesData:', categoriesData);
+    console.log('BlogAdminPage - categoriesLoading:', categoriesLoading);
+    console.log('BlogAdminPage - categoriesError:', categoriesError);
+    
+    if (categoriesData) {
+      console.log('BlogAdminPage - categoriesData length:', categoriesData.length);
+      if (categoriesData.length > 0) {
+        console.log('BlogAdminPage - first category:', categoriesData[0]);
+      }
+    }
+  }, [categoriesData, categoriesLoading, categoriesError]);
+
+  // Add debug logging for blog posts data
+  useEffect(() => {
+    console.log('BlogAdminPage - blogData:', blogData);
+    console.log('BlogAdminPage - posts array:', posts);
+    console.log('BlogAdminPage - pagination:', pagination);
+    console.log('BlogAdminPage - isLoading:', isLoading);
+    console.log('BlogAdminPage - error:', error);
+    
+    // Log the query string being used
+    console.log('BlogAdminPage - queryString:', queryString);
+    
+    // Check if we're getting the expected structure
+    if (blogData) {
+      console.log('BlogAdminPage - blogData structure:', {
+        hasPostsProperty: blogData.hasOwnProperty('posts'),
+        postsType: Array.isArray(blogData.posts) ? 'array' : typeof blogData.posts,
+        hasPagination: blogData.hasOwnProperty('pagination'),
+        paginationType: typeof blogData.pagination
+      });
+    }
+  }, [blogData, posts, pagination, isLoading, error, queryString]);
 
   const handleSort = (column: string) => {
     if (sortBy === column) {
@@ -152,6 +164,32 @@ export function BlogAdminPage() {
         return 'default';
     }
   };
+
+  // Setup delete mutation
+  const { 
+    mutate: deletePost, 
+    isLoading: isDeletingPost 
+  } = useApiMutation<any, any>(`/blog/${postToDelete?.id}`, {
+    onSuccess: () => {
+      setPostToDelete(null);
+      setDeleteSuccess("Post deleted successfully");
+      refetch();
+      
+      // Clear success message after 3 seconds
+      setTimeout(() => {
+        setDeleteSuccess(null);
+      }, 3000);
+    },
+    onError: (error) => {
+      setDeleteError(error.message || "Failed to delete post");
+      setPostToDelete(null);
+      
+      // Clear error message after 3 seconds
+      setTimeout(() => {
+        setDeleteError(null);
+      }, 3000);
+    },
+  });
 
   return (
     <AdminLayout>
@@ -201,11 +239,19 @@ export function BlogAdminPage() {
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="all">All Categories</SelectItem>
-            {categoriesData?.data.map((cat) => (
-              <SelectItem key={cat.slug} value={cat.slug}>
-                {cat.name}
-              </SelectItem>
-            ))}
+            {categoriesLoading ? (
+              <SelectItem value="loading" disabled>Loading categories...</SelectItem>
+            ) : categoriesError ? (
+              <SelectItem value="error" disabled>Error loading categories</SelectItem>
+            ) : categoriesData && categoriesData.length > 0 ? (
+              categoriesData.map((cat) => (
+                <SelectItem key={cat.slug} value={cat.slug}>
+                  {cat.name}
+                </SelectItem>
+              ))
+            ) : (
+              <SelectItem value="none" disabled>No categories found</SelectItem>
+            )}
           </SelectContent>
         </Select>
         <Select value={status} onValueChange={setStatus}>

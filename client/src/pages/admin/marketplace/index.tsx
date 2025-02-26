@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useApi, useApiMutation } from "@/hooks/useApi";
 import { AdminLayout } from "@/components/admin/AdminLayout";
 import { Button } from "@/components/ui/button";
@@ -74,52 +74,72 @@ export function MarketplaceAdminPage() {
   const { 
     data: marketplaceData, 
     error, 
-    isLoading
-  } = useApi<{ data: { items: MarketplaceItem[], pagination: any } }>(`/marketplace?${queryString}`);
+    isLoading,
+    refetch
+  } = useApi<{ items: MarketplaceItem[], pagination: any }>(`/marketplace?${queryString}`);
 
   // Fetch categories for filter
   const { 
-    data: categoriesData 
-  } = useApi<{ data: Array<{ name: string, slug: string }> }>('/marketplace/categories');
-
-  // Setup delete mutation
-  const { 
-    mutate: deleteItem, 
-    isLoading: isDeletingItem 
-  } = useApiMutation<any, any>(`/marketplace/${itemToDelete?.id}`, {
-    onSuccess: () => {
-      setItemToDelete(null);
-      setDeleteSuccess("Item deleted successfully");
-      
-      // Refresh the data by reloading the page
-      setTimeout(() => {
-        window.location.reload();
-      }, 1000);
-      
-      // Clear success message after 3 seconds
-      setTimeout(() => {
-        setDeleteSuccess(null);
-      }, 3000);
-    },
-    onError: (error) => {
-      setDeleteError(error.message || "Failed to delete item");
-      setItemToDelete(null);
-      
-      // Clear error message after 3 seconds
-      setTimeout(() => {
-        setDeleteError(null);
-      }, 3000);
-    },
-  });
+    data: categoriesData,
+    isLoading: categoriesLoading,
+    error: categoriesError
+  } = useApi<Array<{ name: string, slug: string }>>('/marketplace/categories');
 
   // Safely access items and pagination with fallbacks
-  const items = marketplaceData?.data?.items || [];
-  const pagination = marketplaceData?.data?.pagination || { 
+  const items = marketplaceData?.items || [];
+  const pagination = marketplaceData?.pagination || { 
     page: 1, 
     totalPages: 1, 
     hasNextPage: false, 
     hasPrevPage: false 
   };
+
+  // Debug marketplace data whenever it changes
+  useEffect(() => {
+    console.log('MarketplaceAdminPage - marketplaceData:', marketplaceData);
+    console.log('MarketplaceAdminPage - isLoading:', isLoading);
+    console.log('MarketplaceAdminPage - error:', error);
+    
+    if (marketplaceData?.items) {
+      console.log('MarketplaceAdminPage - items count:', marketplaceData.items.length);
+      if (marketplaceData.items.length > 0) {
+        console.log('MarketplaceAdminPage - first item:', marketplaceData.items[0]);
+      }
+    }
+  }, [marketplaceData, isLoading, error]);
+
+  // Debug categories data whenever it changes
+  useEffect(() => {
+    console.log('MarketplaceAdminPage - categoriesData:', categoriesData);
+    console.log('MarketplaceAdminPage - categoriesLoading:', categoriesLoading);
+    console.log('MarketplaceAdminPage - categoriesError:', categoriesError);
+    
+    if (categoriesData) {
+      console.log('MarketplaceAdminPage - categories count:', categoriesData.length);
+      if (categoriesData.length > 0) {
+        console.log('MarketplaceAdminPage - first category:', categoriesData[0]);
+      }
+    }
+  }, [categoriesData, categoriesLoading, categoriesError]);
+
+  // Add detailed logging for marketplace items data
+  useEffect(() => {
+    console.log('MarketplaceAdminPage - items array:', items);
+    console.log('MarketplaceAdminPage - pagination:', pagination);
+    
+    // Log the query string being used
+    console.log('MarketplaceAdminPage - queryString:', queryString);
+    
+    // Check if we're getting the expected structure
+    if (marketplaceData) {
+      console.log('MarketplaceAdminPage - marketplaceData structure:', {
+        hasItemsProperty: marketplaceData.hasOwnProperty('items'),
+        itemsType: Array.isArray(marketplaceData.items) ? 'array' : typeof marketplaceData.items,
+        hasPagination: marketplaceData.hasOwnProperty('pagination'),
+        paginationType: typeof marketplaceData.pagination
+      });
+    }
+  }, [marketplaceData, items, pagination, queryString]);
 
   const handleSort = (column: string) => {
     if (sortBy === column) {
@@ -156,6 +176,36 @@ export function MarketplaceAdminPage() {
         return 'default';
     }
   };
+
+  // Setup delete mutation
+  const { 
+    mutate: deleteItem, 
+    isLoading: isDeletingItem 
+  } = useApiMutation<any, any>(`/marketplace/${itemToDelete?.id}`, {
+    onSuccess: () => {
+      setItemToDelete(null);
+      setDeleteSuccess("Item deleted successfully");
+      
+      // Refresh the data by reloading the page
+      setTimeout(() => {
+        window.location.reload();
+      }, 1000);
+      
+      // Clear success message after 3 seconds
+      setTimeout(() => {
+        setDeleteSuccess(null);
+      }, 3000);
+    },
+    onError: (error) => {
+      setDeleteError(error.message || "Failed to delete item");
+      setItemToDelete(null);
+      
+      // Clear error message after 3 seconds
+      setTimeout(() => {
+        setDeleteError(null);
+      }, 3000);
+    },
+  });
 
   return (
     <AdminLayout>
@@ -205,7 +255,7 @@ export function MarketplaceAdminPage() {
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="all">All Categories</SelectItem>
-            {categoriesData?.data?.map((cat) => (
+            {categoriesData?.map((cat) => (
               <SelectItem key={cat.slug} value={cat.slug}>
                 {cat.name}
               </SelectItem>
