@@ -27,6 +27,18 @@ app.use(cors());  // Simplified CORS configuration
 
 app.use(express.json());
 
+// Import routes from server/dist
+import authRoutes from './server/dist/routes/auth.js';
+import contactRoutes from './server/dist/routes/contact.js';
+import productRoutes from './server/dist/routes/products.js';
+import healthRoutes from './server/dist/routes/health.js';
+
+// Register API routes first
+app.use('/api/auth', authRoutes);
+app.use('/api/contact', contactRoutes);
+app.use('/api/products', productRoutes);
+app.use('/api/health', healthRoutes);
+
 // Health check route
 app.get('/api/health', async (req, res) => {
   try {
@@ -113,6 +125,78 @@ app.get('/api/marketplace', async (req, res) => {
   }
 });
 
+// Blog API route
+app.get('/api/blog', async (req, res) => {
+  try {
+    const { page = 1, limit = 10, status, category, search, sortBy = 'publishedAt', order = 'desc' } = req.query;
+    const skip = (Number(page) - 1) * Number(limit);
+    
+    const where = {};
+    
+    if (status) {
+      where.status = status;
+    }
+    
+    if (category) {
+      where.category = {
+        slug: category
+      };
+    }
+    
+    if (search) {
+      where.OR = [
+        { title: { contains: search, mode: 'insensitive' } },
+        { content: { contains: search, mode: 'insensitive' } }
+      ];
+    }
+
+    const [posts, total] = await Promise.all([
+      prisma.post.findMany({
+        where,
+        include: {
+          author: {
+            select: {
+              id: true,
+              name: true,
+              email: true,
+              avatar: true,
+            },
+          },
+          category: true,
+          tags: true,
+        },
+        orderBy: {
+          [sortBy]: order,
+        },
+        skip,
+        take: Number(limit),
+      }),
+      prisma.post.count({ where }),
+    ]);
+
+    res.json({
+      status: 'success',
+      data: {
+        posts,
+        pagination: {
+          page: Number(page),
+          limit: Number(limit),
+          total,
+          totalPages: Math.ceil(total / Number(limit)),
+          hasNextPage: skip + posts.length < total,
+          hasPrevPage: Number(page) > 1,
+        },
+      },
+    });
+  } catch (error) {
+    console.error('Error fetching blog posts:', error);
+    res.status(500).json({
+      status: 'error',
+      message: 'Failed to fetch blog posts',
+    });
+  }
+});
+
 // Testimonials API route
 app.get('/api/testimonials', async (req, res) => {
   try {
@@ -156,23 +240,12 @@ app.get('/api/testimonials', async (req, res) => {
   }
 });
 
-// Import routes from server/dist
-import authRoutes from './server/dist/routes/auth.js';
-import contactRoutes from './server/dist/routes/contact.js';
-import productRoutes from './server/dist/routes/products.js';
-import healthRoutes from './server/dist/routes/health.js';
-
-// Register routes
-app.use('/api/auth', authRoutes);
-app.use('/api/contact', contactRoutes);
-app.use('/api/products', productRoutes);
-app.use('/api/health', healthRoutes);
-
 // Serve static files from the React app
 const buildPath = path.join(__dirname, 'client/dist');
 app.use(express.static(buildPath));
 
 // Handle React routing, return all requests to React app
+// This should be AFTER all API routes
 app.get('*', (req, res) => {
   res.sendFile(path.join(buildPath, 'index.html'));
 });
