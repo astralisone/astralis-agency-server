@@ -1,0 +1,100 @@
+rules:
+  - name: Components & Naming
+    files: "client/src/components/**/*.{tsx,jsx}"
+    description: |
+      Use functional components with "use client" when needed.
+      Name components in PascalCase, keep them small, and type them using interfaces.
+      Prefer using radix or shadcn.
+
+  - name: Prisma
+    files:
+      - "prisma/schema.prisma"
+      - "src/lib/db.ts"
+    description: |
+      Manage database logic with Prisma.
+      Map snake_case table names to camelCase fields.
+      Avoid raw SQL; always run `npx prisma migrate dev` and never use `npx prisma db push`.
+
+  - name: Icons
+    files: "client/src/components/icons/**/*"
+    description: |
+      Prefer using `lucide-react` for icons, naming them in PascalCase.
+      For custom icons, use the `client/src/components/icons` directory.
+
+  - name: Toast Notifications
+    files: "client/src/components/**/*.{tsx,jsx}"
+    description: |
+      Use `react-toastify` for notifications in client components.
+      Invoke methods like `toast.success()` and `toast.error()` as needed.
+
+  - name: Express Server Structure
+    files:
+      - "src/routes/**/*.ts"
+      - "server.js"
+      - "server/routes/**/*.ts"
+    description: |
+      Build the Express server with routes defined in `src/routes` and `server/routes` (in kebab-case).
+      Incorporate middleware (cors, helmet, compression, morgan, express-rate-limit, express-winston).
+      Use Prisma for DB access.
+      For authentication, apply express-jwt with jwks-rsa and cors-express-jwt-auth.
+      Use winston for logging, zod for input validation, nodemailer for emails, stripe for payments,
+      and twilio/sendgrid for SMS/email as appropriate.
+
+  - name: tRPC Routers
+    files:
+      - "server/src/trpc/api/routers/**/*.ts"
+      - "server/src/trpc/api/root.ts"
+    description: |
+      Define tRPC routers in `server/src/trpc/api/routers` and compose them in `server/src/trpc/api/root.ts`.
+      Use `publicProcedure` or `protectedProcedure` with Zod validation.
+      Access these procedures from React via `@/lib/trpc/react`.
+
+  - name: TypeScript & Syntax
+    files: "**/*.{ts,tsx}"
+    description: |
+      Enforce strict mode and avoid using `any`.
+      Utilize optional chaining and union types; avoid enums.
+
+  - name: File & Folder Naming
+    files: "**/*"
+    description: |
+      Place client code in the `client` folder (building to the root’s `build` folder).
+      Server code resides in the root, with `server.js` at the root and routes in kebab-case (e.g. `server/routes/auth.ts`).
+      Store shared types in `src/lib/types.ts`.
+      Maintain sorted import order: external → internal → sibling → styles.
+
+  - name: AI Integration
+    files: "src/lib/aiClient.ts"
+    description: |
+      Route all AI calls through `generateChatCompletion`.
+      Prefer the `O1` model with high reasoning effort.
+
+  - name: Storybook Configuration
+    files: "**/*.stories.tsx"
+    description: |
+      Place Storybook stories adjacent to their components (with a `.stories.tsx` extension).
+      Ensure one story file per component (named to match the component), use autodocs for documentation,
+      include multiple variants/sizes, and test interactive features using actions.
+      Use relative imports from the component directory.
+
+  - name: Tools & Workflow
+    files: "**/*"
+    description: |
+      When modifying the UI, use the `screenshot` tool to capture changes.
+      For complex tasks, utilize the `architect` tool to produce a plan and then the `codeReview` tool to
+      create and review diffs—ensuring adherence to existing code patterns and structure.
+
+  - name: Additional Guidelines
+    files: "**/*"
+    description: |
+      Keep code concise with semantic commits.
+      Place reusable logic in `client/src/lib/utils/shared.ts` or `server/src/lib/utils/shared.ts`.
+      Use `tsx` scripts for migrations.
+
+  - name: Build & Commit Process
+    files: "**/*"
+    description: |
+      After all changes, always build the project with `yarn build` (ignore warnings, fix errors).
+      Append a one-sentence summary of changes to the `.cursor-updates` file (in markdown) at the end of each agent interaction.
+      If forgotten, use the "finish" command to trigger the build and update.
+      Finally, update git with `git add . && git commit -m "..."` (but do not push).

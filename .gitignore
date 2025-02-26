@@ -8,3 +8,5 @@ astralis-server.pem
 .vscode/
 client/dist/
 
+
+*storybook.log

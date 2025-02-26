@@ -1,0 +1,177 @@
+// This is your Prisma schema file
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// User model for authentication and profiles
+model User {
+  id            String    @id @default(uuid())
+  email         String    @unique
+  name          String?
+  password      String    // Hashed password
+  avatar        String?
+  bio           String?
+  role          UserRole  @default(USER)
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  posts         Post[]    // Author relationship
+  comments      Comment[]
+  likes         Like[]
+  marketplaceItems MarketplaceItem[] // Seller relationship
+  wishlists     Wishlist[]
+
+  @@map("users")
+}
+
+enum UserRole {
+  USER
+  AUTHOR
+  EDITOR
+  ADMIN
+}
+
+// Blog post model
+model Post {
+  id              String    @id @default(uuid())
+  title           String
+  slug            String    @unique
+  content         String    @db.Text
+  excerpt         String?   @db.Text
+  featuredImage   String?
+  status          PostStatus @default(DRAFT)
+  publishedAt     DateTime?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+  author          User      @relation(fields: [authorId], references: [id])
+  authorId        String
+  category        Category  @relation(fields: [categoryId], references: [id])
+  categoryId      String
+  tags            Tag[]
+  comments        Comment[]
+  likes           Like[]
+  metaTitle       String?
+  metaDescription String?   @db.Text
+  keywords        String[]
+  viewCount       Int       @default(0)
+  featured        Boolean   @default(false)
+  pinned          Boolean   @default(false)
+  sortOrder       Int?
+  locale          String    @default("en")
+
+  @@map("posts")
+}
+
+enum PostStatus {
+  DRAFT
+  PUBLISHED
+  ARCHIVED
+}
+
+// Marketplace item model
+model MarketplaceItem {
+  id              String    @id @default(uuid())
+  title           String
+  slug            String    @unique
+  description     String    @db.Text
+  price           Decimal   @db.Decimal(10, 2)
+  imageUrl        String
+  status          ItemStatus @default(AVAILABLE)
+  category        Category  @relation(fields: [categoryId], references: [id])
+  categoryId      String
+  seller          User      @relation(fields: [sellerId], references: [id])
+  sellerId        String
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+  specifications  Json?
+  features        String[]
+  tags            Tag[]
+  stock           Int       @default(0)
+  discountPrice   Decimal?  @db.Decimal(10, 2)
+  weight          Decimal?  @db.Decimal(10, 2)
+  dimensions      Json?
+  featured        Boolean   @default(false)
+  published       Boolean   @default(true)
+  sortOrder       Int?
+  wishlists       Wishlist[]
+
+  @@map("marketplace_items")
+}
+
+enum ItemStatus {
+  AVAILABLE
+  SOLD_OUT
+  COMING_SOON
+}
+
+// Category model for both blog posts and marketplace items
+model Category {
+  id              String    @id @default(uuid())
+  name            String
+  slug            String    @unique
+  description     String?   @db.Text
+  posts           Post[]
+  marketplaceItems MarketplaceItem[]
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  @@map("categories")
+}
+
+// Tags for both posts and marketplace items
+model Tag {
+  id              String    @id @default(uuid())
+  name            String    @unique
+  slug            String    @unique
+  posts           Post[]
+  marketplaceItems MarketplaceItem[]
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  @@map("tags")
+}
+
+// Comments for blog posts
+model Comment {
+  id              String    @id @default(uuid())
+  content         String    @db.Text
+  post            Post      @relation(fields: [postId], references: [id])
+  postId          String
+  author          User      @relation(fields: [authorId], references: [id])
+  authorId        String
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  @@map("comments")
+}
+
+// Likes for blog posts
+model Like {
+  id              String    @id @default(uuid())
+  post            Post      @relation(fields: [postId], references: [id])
+  postId          String
+  user            User      @relation(fields: [userId], references: [id])
+  userId          String
+  createdAt       DateTime  @default(now())
+
+  @@unique([postId, userId])
+  @@map("likes")
+}
+
+// Wishlists for marketplace items
+model Wishlist {
+  id              String    @id @default(uuid())
+  user            User      @relation(fields: [userId], references: [id])
+  userId          String
+  item            MarketplaceItem @relation(fields: [itemId], references: [id])
+  itemId          String
+  createdAt       DateTime  @default(now())
+
+  @@unique([userId, itemId])
+  @@map("wishlists")
+} 

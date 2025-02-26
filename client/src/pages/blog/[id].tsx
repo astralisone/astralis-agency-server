@@ -1,20 +1,22 @@
-import { useParams, Navigate } from "react-router-dom"
-import { BlogPostContent } from "@/components/blog/blog-post-content"
-import { blogPosts } from "@/lib/blog/data"
-import { useMount } from "@/lib/hooks"
+import { useParams } from "react-router-dom"
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 
-export default function BlogPostPage() {
+export function BlogPostPage() {
   const { id } = useParams()
-  const mounted = useMount()
-  const post = blogPosts.find(post => post.id === parseInt(id || ""))
 
-  if (!mounted) {
-    return null
-  }
-
-  if (!post) {
-    return <Navigate to="/blog" replace />
-  }
-
-  return <BlogPostContent post={post} />
+  return (
+    <div className="container py-8">
+      <div className="max-w-3xl mx-auto">
+        <Card>
+          <CardHeader>
+            <CardTitle>Blog Post</CardTitle>
+            <CardDescription>Post ID: {id}</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <p>Blog post content coming soon...</p>
+          </CardContent>
+        </Card>
+      </div>
+    </div>
+  )
 }

@@ -7,10 +7,10 @@ import { PayPalCheckoutButton } from "@/components/checkout/PayPalCheckoutButton
 import { OrderSummary } from "@/components/checkout/order-summary"
 import { ShoppingCart } from "lucide-react"
 import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { useMount } from "@/lib/hooks"
 
-export default function CheckoutPage() {
+export function CheckoutPage() {
   const navigate = useNavigate()
   const { items, total } = useCart()
   const mounted = useMount()
@@ -37,24 +37,17 @@ export default function CheckoutPage() {
   }
 
   return (
-    <div className="min-h-screen bg-background py-12">
-      <div className="container max-w-6xl mx-auto px-4">
-        <h1 className="text-3xl font-bold mb-8">Secure Checkout</h1>
-        <div className="grid gap-8 lg:grid-cols-2">
-          <div className="space-y-6">
-            <Card>
-              <CardHeader>
-                <CardTitle>Payment Method</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <PayPalCheckoutButton amount={total} />
-              </CardContent>
-            </Card>
-          </div>
-          <div className="lg:sticky lg:top-6">
-            <OrderSummary items={items} total={total} />
-          </div>
-        </div>
+    <div className="container py-8">
+      <div className="max-w-2xl mx-auto">
+        <Card>
+          <CardHeader>
+            <CardTitle>Checkout</CardTitle>
+            <CardDescription>Complete your purchase</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <p>Checkout functionality coming soon...</p>
+          </CardContent>
+        </Card>
       </div>
     </div>
   )

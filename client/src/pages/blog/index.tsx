@@ -4,7 +4,7 @@ import { BlogList } from "@/components/blog/blog-list"
 import { blogPosts } from "@/lib/blog/data"
 import { useMount } from "@/lib/hooks"
 
-export default function BlogPage() {
+export function BlogPage() {
   const mounted = useMount()
 
   if (!mounted) {

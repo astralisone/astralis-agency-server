@@ -4,7 +4,7 @@ import { PortfolioSection } from "@/components/sections/portfolio"
 import { TestimonialsSection } from "@/components/sections/testimonials"
 import { CTASection } from "@/components/sections/cta"
 
-export default function HomePage() {
+export function HomePage() {
   return (
     <div className="flex flex-col gap-20 pb-20">
       <HeroSection />

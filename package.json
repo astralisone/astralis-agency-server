@@ -1,8 +1,7 @@
 {
   "name": "astralis-agency",
-  "version": "1.0.0-agency",
   "version": "1.0.0",
-  "license":"UNLICENSED",
+  "license": "UNLICENSED",
   "private": true,
   "workspaces": [
     "client",
@@ -10,32 +9,51 @@
   ],
   "scripts": {
     "start": "node server.js",
-    "start:prod":"node server.js",
-    "build:client":"cd client && yarn build",
-    "build:server":"cd server && yarn build",
+    "start:prod": "node server.js",
+    "build:client": "cd client && yarn build",
+    "build:server": "cd server && yarn build",
     "build": "yarn build:client && yarn build:server",
     "dev": "nodemon server.js",
-    "test": "jest",
-    "test:watch": "jest --watch",
+    "client:dev": "cd client && yarn dev",
+    "server:dev": "nodemon server.js",
+    "dev:all": "concurrently \"yarn server:dev\" \"yarn client:dev\"",
+    "test": "jest --config jest.config.js",
+    "test:watch": "jest --config jest.config.js --watch",
+    "test:coverage": "jest --config jest.config.js --coverage",
     "cleanup": "rm -rf build && mkdir build && cd client && rm -rf dist",
-    "postbuild": "cp -r client/dist/* build/"
+    "postbuild": "cp -r client/dist/* build/",
+    "seed": "ts-node prisma/seed.ts"
   },
   "dependencies": {
+    "@prisma/client": "^6.4.1",
+    "@types/bcrypt": "^5.0.2",
+    "bcrypt": "^5.1.1",
     "body-parser": "^1.20.2",
     "cors": "^2.8.5",
     "dotenv": "^16.4.7",
     "express": "^4.18.2",
+    "express-validator": "^7.2.1",
+    "prisma": "^6.4.1",
     "zod": "^3.24.2"
   },
   "devDependencies": {
+    "@types/jest": "^29.5.12",
+    "@types/supertest": "^6.0.2",
+    "concurrently": "^9.1.2",
     "jest": "^29.7.0",
     "nodemon": "^3.0.2",
-    "supertest": "^6.3.3"
+    "supertest": "^6.3.3",
+    "ts-jest": "^29.1.2",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.7.3"
   },
   "jest": {
     "testEnvironment": "node",
     "setupFiles": [
       "<rootDir>/jest.setup.js"
     ]
+  },
+  "prisma": {
+    "seed": "ts-node prisma/seed.ts"
   }
 }

@@ -3,12 +3,12 @@ import { Providers } from "@/components/providers";
 import { Navbar } from "@/components/navbar";
 import { Footer } from "@/components/footer";
 import { Toaster } from "@/components/ui/toaster";
-import HomePage from "@/pages/home";
-import MarketplacePage from "@/pages/marketplace";
-import BlogPage from "@/pages/blog";
-import ContactPage from "@/pages/contact";
-import CheckoutPage from "@/pages/checkout";
-import BlogPostPage from "@/pages/blog/[id]";
+import { HomePage } from "@/pages/home";
+import { MarketplacePage } from "@/pages/marketplace";
+import { BlogPage } from "@/pages/blog";
+import { ContactPage } from "@/pages/contact";
+import { CheckoutPage } from "@/pages/checkout";
+import { BlogPostPage } from "@/pages/blog/[id]";
 
 function App() {
   return (
