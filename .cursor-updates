@@ -44,3 +44,4 @@
 - Fixed Select component issues in both Blog and Marketplace admin pages
 - Fixed API endpoints for blog categories and tags to use the correct Prisma models
 - Created enhanced seed script for populating categories and tags with more data
+- Fixed data display issues in blog and marketplace admin pages by updating API response type definitions and data access patterns
