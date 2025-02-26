@@ -32,6 +32,12 @@
 - Fixed register page to use the auth provider hook instead of direct API calls
 - Completed Admin Authentication implementation with JWT and protected routes
 
+## 2025-02-27
+- Conducted a comprehensive audit of the codebase to identify extraneous and unused files
+- Identified duplicate files, obsolete configuration files, and redundant code that can be safely removed
+- Created a detailed list of files to clean up, including backup files, temporary development files, and unused directories
+- Documented the audit findings for future cleanup and maintenance
+
 ## 2025-02-26
 - Updated login page to use the auth provider hook instead of making direct API calls
 - Fixed redirection after login by leveraging the auth provider's navigation logic
