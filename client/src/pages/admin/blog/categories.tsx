@@ -86,7 +86,16 @@ export function BlogCategoriesPage() {
     error, 
     isLoading,
     refetch
-  } = useApi<{ data: Category[] }>('/blog/categories');
+  } = useApi<{ status: string; data: Category[] }>('/blog/categories');
+
+  // Add console logs for debugging
+  console.log('categoriesData:', categoriesData);
+  console.log('isLoading:', isLoading);
+  console.log('error:', error);
+
+  // Extract the categories array from the response with defensive checks
+  const categories = categoriesData && categoriesData ? categoriesData : [];
+  console.log('categories array:', categories);
 
   // Setup add mutation
   const { 
@@ -141,9 +150,10 @@ export function BlogCategoriesPage() {
 
   // Setup delete mutation
   const { 
-    mutate: deleteCategory, 
+    mutate: deleteCategoryMutation, 
     isLoading: isDeletingCategory 
-  } = useApiMutation<any, any>(`/blog/categories/${categoryToDelete?.id}`, {
+  } = useApiMutation<any, { id: number }>(`/blog/categories/delete`, {
+    method: 'DELETE',
     onSuccess: () => {
       setCategoryToDelete(null);
       setActionSuccess("Category deleted successfully");
@@ -206,8 +216,8 @@ export function BlogCategoriesPage() {
   };
 
   const confirmDelete = () => {
-    if (categoryToDelete) {
-      deleteCategory({}, "DELETE");
+    if (categoryToDelete?.id) {
+      deleteCategoryMutation({ id: categoryToDelete.id });
     }
   };
 
@@ -236,8 +246,6 @@ export function BlogCategoriesPage() {
       form.setValue("slug", generateSlug(name));
     }
   };
-
-  const categories = categoriesData?.data || [];
 
   return (
     <AdminLayout>
@@ -379,7 +387,7 @@ export function BlogCategoriesPage() {
                   Error loading categories. Please try again.
                 </TableCell>
               </TableRow>
-            ) : categories.length === 0 ? (
+            ) : !categories || categories.length === 0 ? (
               <TableRow>
                 <TableCell colSpan={5} className="text-center py-4 text-muted-foreground">
                   No categories found. Create your first category!

@@ -37,6 +37,10 @@ interface Tag {
   id: string;
   name: string;
   slug: string;
+  _count: {
+    posts: number;
+  };
+  postsCount?: number;
   createdAt: string;
   updatedAt: string;
 }
@@ -52,16 +56,12 @@ type TagFormValues = z.infer<typeof tagSchema>;
 
 export function BlogTagsPage() {
   const navigate = useNavigate();
-  const [tags, setTags] = useState<Tag[]>([]);
   const [isEditing, setIsEditing] = useState(false);
   const [currentTag, setCurrentTag] = useState<Tag | null>(null);
   const [tagToDelete, setTagToDelete] = useState<Tag | null>(null);
-  const [addSuccess, setAddSuccess] = useState(false);
   const [addError, setAddError] = useState('');
   const [updateSuccess, setUpdateSuccess] = useState(false);
-  const [updateError, setUpdateError] = useState('');
   const [deleteSuccess, setDeleteSuccess] = useState(false);
-  const [deleteError, setDeleteError] = useState('');
 
   const form = useForm<TagFormValues>({
     resolver: zodResolver(tagSchema),
@@ -71,16 +71,34 @@ export function BlogTagsPage() {
     },
   });
 
-  const { data: tagsData, isLoading: isLoadingTags } = useApi<Tag[]>('/blog/tags');
+  const { 
+    data: tagsData, 
+    error: tagsError, 
+    isLoading: tagsLoading,
+    refetch
+  } = useApi<{ status: string; data: Tag[] }>('/blog/tags');
 
-  const { mutate: addTag, isLoading: isAddingTag } = useApiMutation<TagFormValues, Tag>('/blog/tags', {
+  // Add console logs for debugging
+  console.log('tagsData:', tagsData);
+  console.log('tagsLoading:', tagsLoading);
+  console.log('tagsError:', tagsError);
+
+  // Extract the tags array from the response with more defensive checks
+  const tags = tagsData && tagsData ? tagsData : [];
+  console.log('tags array:', tags);
+
+  useEffect(() => {
+    if (currentTag) {
+      form.setValue('name', currentTag.name);
+      form.setValue('slug', currentTag.slug);
+    }
+  }, [currentTag, form]);
+
+  const { mutate: addTag, isLoading: isAddingTag } = useApiMutation<Tag, TagFormValues>('/blog/tags', {
     onSuccess: () => {
-      setAddSuccess(true);
-      setTimeout(() => setAddSuccess(false), 3000);
+      setAddError('');
       form.reset({ name: '', slug: '' });
-      setTimeout(() => {
-        window.location.reload();
-      }, 1000);
+      refetch();
     },
     onError: (error: any) => {
       setAddError(error.message || 'Failed to add tag');
@@ -95,36 +113,27 @@ export function BlogTagsPage() {
       setIsEditing(false);
       setCurrentTag(null);
       form.reset({ name: '', slug: '' });
-      setTimeout(() => {
-        window.location.reload();
-      }, 1000);
+      refetch();
     },
     onError: (error: any) => {
-      setUpdateError(error.message || 'Failed to update tag');
-      setTimeout(() => setUpdateError(''), 3000);
+      setAddError(error.message || 'Failed to update tag');
+      setTimeout(() => setAddError(''), 3000);
     },
   });
 
-  const { mutate: deleteTag, isLoading: isDeletingTag } = useApiMutation<{ id: string }, { success: boolean }>(`/blog/tags/${tagToDelete?.id}`, {
+  const { mutate: deleteTag, isLoading: isDeletingTag } = useApiMutation<{ success: boolean }, null>(`/blog/tags/${tagToDelete?.id}`, {
+    method: 'DELETE',
     onSuccess: () => {
       setDeleteSuccess(true);
       setTimeout(() => setDeleteSuccess(false), 3000);
       setTagToDelete(null);
-      setTimeout(() => {
-        window.location.reload();
-      }, 1000);
+      refetch();
     },
     onError: (error: any) => {
-      setDeleteError(error.message || 'Failed to delete tag');
-      setTimeout(() => setDeleteError(''), 3000);
+      setAddError(error.message || 'Failed to delete tag');
+      setTimeout(() => setAddError(''), 3000);
     },
   });
-
-  useEffect(() => {
-    if (tagsData) {
-      setTags(tagsData);
-    }
-  }, [tagsData]);
 
   const onSubmit = (data: TagFormValues) => {
     if (isEditing && currentTag) {
@@ -135,12 +144,8 @@ export function BlogTagsPage() {
   };
 
   const handleEditClick = (tag: Tag) => {
-    setIsEditing(true);
     setCurrentTag(tag);
-    form.reset({
-      name: tag.name,
-      slug: tag.slug,
-    });
+    setIsEditing(true);
   };
 
   const handleDeleteClick = (tag: Tag) => {
@@ -149,7 +154,7 @@ export function BlogTagsPage() {
 
   const confirmDelete = () => {
     if (tagToDelete) {
-      deleteTag({ id: tagToDelete.id });
+      deleteTag(null);
     }
   };
 
@@ -170,206 +175,190 @@ export function BlogTagsPage() {
         .toLowerCase()
         .replace(/[^\w\s-]/g, '')
         .replace(/\s+/g, '-');
-      form.setValue('slug', slug, { shouldValidate: true });
+      form.setValue('slug', slug);
     }
   };
 
   return (
     <AdminLayout>
-      <div className="container mx-auto py-10">
-        <div className="grid grid-cols-1 gap-8 md:grid-cols-2">
-          <Card>
-            <CardHeader>
-              <CardTitle>{isEditing ? 'Edit Tag' : 'Add New Tag'}</CardTitle>
-              <CardDescription>
-                {isEditing
-                  ? 'Update the tag information below'
-                  : 'Create a new tag for blog posts'}
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              {addSuccess && (
-                <Alert className="mb-4 bg-green-50">
-                  <CheckCircle2 className="h-4 w-4 text-green-600" />
-                  <AlertTitle className="text-green-800">Success</AlertTitle>
-                  <AlertDescription className="text-green-700">
-                    Tag added successfully!
-                  </AlertDescription>
-                </Alert>
-              )}
-
-              {addError && (
-                <Alert className="mb-4 bg-red-50" variant="destructive">
-                  <AlertCircle className="h-4 w-4" />
-                  <AlertTitle>Error</AlertTitle>
-                  <AlertDescription>{addError}</AlertDescription>
-                </Alert>
-              )}
-
-              {updateSuccess && (
-                <Alert className="mb-4 bg-green-50">
-                  <CheckCircle2 className="h-4 w-4 text-green-600" />
-                  <AlertTitle className="text-green-800">Success</AlertTitle>
-                  <AlertDescription className="text-green-700">
-                    Tag updated successfully!
-                  </AlertDescription>
-                </Alert>
-              )}
-
-              {updateError && (
-                <Alert className="mb-4 bg-red-50" variant="destructive">
-                  <AlertCircle className="h-4 w-4" />
-                  <AlertTitle>Error</AlertTitle>
-                  <AlertDescription>{updateError}</AlertDescription>
-                </Alert>
-              )}
-
-              <Form {...form}>
-                <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-                  <FormField
-                    control={form.control}
-                    name="name"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Tag Name</FormLabel>
-                        <FormControl>
-                          <Input placeholder="Enter tag name" {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-
-                  <div className="flex items-end gap-2">
-                    <FormField
-                      control={form.control}
-                      name="slug"
-                      render={({ field }) => (
-                        <FormItem className="flex-1">
-                          <FormLabel>Slug</FormLabel>
-                          <FormControl>
-                            <Input placeholder="enter-slug" {...field} />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                    <Button type="button" variant="outline" onClick={generateSlug}>
-                      Generate
-                    </Button>
-                  </div>
-
-                  <div className="flex gap-2">
-                    <Button type="submit" disabled={isAddingTag || isUpdatingTag}>
-                      {isEditing ? 'Update Tag' : 'Add Tag'}
-                    </Button>
-                    {isEditing && (
-                      <Button type="button" variant="outline" onClick={cancelEdit}>
-                        Cancel
-                      </Button>
-                    )}
-                  </div>
-                </form>
-              </Form>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader>
-              <CardTitle>Manage Tags</CardTitle>
-              <CardDescription>View, edit, and delete existing tags</CardDescription>
-            </CardHeader>
-            <CardContent>
-              {deleteSuccess && (
-                <Alert className="mb-4 bg-green-50">
-                  <CheckCircle2 className="h-4 w-4 text-green-600" />
-                  <AlertTitle className="text-green-800">Success</AlertTitle>
-                  <AlertDescription className="text-green-700">
-                    Tag deleted successfully!
-                  </AlertDescription>
-                </Alert>
-              )}
-
-              {deleteError && (
-                <Alert className="mb-4 bg-red-50" variant="destructive">
-                  <AlertCircle className="h-4 w-4" />
-                  <AlertTitle>Error</AlertTitle>
-                  <AlertDescription>{deleteError}</AlertDescription>
-                </Alert>
-              )}
-
-              {isLoadingTags ? (
-                <div className="space-y-2">
-                  {Array.from({ length: 5 }).map((_, index) => (
-                    <div key={index} className="flex items-center space-x-4">
-                      <Skeleton className="h-10 w-full" />
-                    </div>
-                  ))}
-                </div>
-              ) : tags.length === 0 ? (
-                <div className="py-4 text-center text-muted-foreground">No tags found</div>
-              ) : (
-                <div className="rounded-md border">
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>Name</TableHead>
-                        <TableHead>Slug</TableHead>
-                        <TableHead className="text-right">Actions</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {tags.map((tag) => (
-                        <TableRow key={tag.id}>
-                          <TableCell>{tag.name}</TableCell>
-                          <TableCell>{tag.slug}</TableCell>
-                          <TableCell className="text-right">
-                            <div className="flex justify-end gap-2">
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                onClick={() => handleEditClick(tag)}
-                              >
-                                <Pencil className="h-4 w-4" />
-                                <span className="sr-only">Edit</span>
-                              </Button>
-                              <AlertDialog>
-                                <AlertDialogTrigger asChild>
-                                  <Button
-                                    variant="ghost"
-                                    size="icon"
-                                    onClick={() => handleDeleteClick(tag)}
-                                  >
-                                    <Trash2 className="h-4 w-4 text-red-500" />
-                                    <span className="sr-only">Delete</span>
-                                  </Button>
-                                </AlertDialogTrigger>
-                                <AlertDialogContent>
-                                  <AlertDialogHeader>
-                                    <AlertDialogTitle>Are you sure?</AlertDialogTitle>
-                                    <AlertDialogDescription>
-                                      This will permanently delete the tag "{tagToDelete?.name}". This action cannot be undone.
-                                    </AlertDialogDescription>
-                                  </AlertDialogHeader>
-                                  <AlertDialogFooter>
-                                    <AlertDialogCancel onClick={cancelDelete}>Cancel</AlertDialogCancel>
-                                    <AlertDialogAction onClick={confirmDelete} className="bg-red-500 text-white hover:bg-red-600">
-                                      Delete
-                                    </AlertDialogAction>
-                                  </AlertDialogFooter>
-                                </AlertDialogContent>
-                              </AlertDialog>
-                            </div>
-                          </TableCell>
-                        </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
-                </div>
-              )}
-            </CardContent>
-          </Card>
+      <div className="space-y-6">
+        <div className="flex justify-between items-center">
+          <h1 className="text-3xl font-bold">Blog Tags</h1>
+          <Button onClick={() => navigate('/admin/blog')}>Back to Blog Admin</Button>
         </div>
+
+        <Card>
+          <CardHeader>
+            <CardTitle>{isEditing ? 'Edit Tag' : 'Add New Tag'}</CardTitle>
+            <CardDescription>
+              {isEditing
+                ? 'Update the tag details below'
+                : 'Create a new tag for categorizing blog posts'}
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            {addError && (
+              <Alert variant="destructive" className="mb-4">
+                <AlertCircle className="h-4 w-4" />
+                <AlertTitle>Error</AlertTitle>
+                <AlertDescription>{addError}</AlertDescription>
+              </Alert>
+            )}
+
+            {updateSuccess && (
+              <Alert className="mb-4">
+                <CheckCircle2 className="h-4 w-4" />
+                <AlertTitle>Success</AlertTitle>
+                <AlertDescription>Tag updated successfully</AlertDescription>
+              </Alert>
+            )}
+
+            {deleteSuccess && (
+              <Alert className="mb-4">
+                <CheckCircle2 className="h-4 w-4" />
+                <AlertTitle>Success</AlertTitle>
+                <AlertDescription>Tag deleted successfully</AlertDescription>
+              </Alert>
+            )}
+
+            <Form {...form}>
+              <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+                <FormField
+                  control={form.control}
+                  name="name"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Name</FormLabel>
+                      <FormControl>
+                        <Input
+                          {...field}
+                          placeholder="Tag name"
+                          onChange={(e) => {
+                            field.onChange(e);
+                            if (!isEditing) {
+                              generateSlug();
+                            }
+                          }}
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="slug"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Slug</FormLabel>
+                      <FormControl>
+                        <Input {...field} placeholder="tag-slug" />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <div className="flex gap-2">
+                  <Button type="submit" disabled={isAddingTag || isUpdatingTag}>
+                    {isEditing ? 'Update Tag' : 'Add Tag'}
+                  </Button>
+                  {isEditing && (
+                    <Button type="button" variant="outline" onClick={cancelEdit}>
+                      Cancel
+                    </Button>
+                  )}
+                </div>
+              </form>
+            </Form>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle>Tags</CardTitle>
+            <CardDescription>Manage your blog tags</CardDescription>
+          </CardHeader>
+          <CardContent>
+            {tagsLoading ? (
+              <div className="space-y-2">
+                <Skeleton className="h-10 w-full" />
+                <Skeleton className="h-10 w-full" />
+                <Skeleton className="h-10 w-full" />
+              </div>
+            ) : tagsError ? (
+              <Alert variant="destructive">
+                <AlertCircle className="h-4 w-4" />
+                <AlertTitle>Error</AlertTitle>
+                <AlertDescription>Failed to load tags</AlertDescription>
+              </Alert>
+            ) : !tags || tags.length === 0 ? (
+              <p className="text-center py-4">No tags found. Create your first tag above.</p>
+            ) : (
+              <div className="overflow-x-auto">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Name</TableHead>
+                      <TableHead>Slug</TableHead>
+                      <TableHead>Posts</TableHead>
+                      <TableHead className="text-right">Actions</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {tags.map((tag) => (
+                      <TableRow key={tag.id}>
+                        <TableCell className="font-medium">{tag.name}</TableCell>
+                        <TableCell>{tag.slug}</TableCell>
+                        <TableCell>{tag.postsCount || 0}</TableCell>
+                        <TableCell className="text-right">
+                          <div className="flex justify-end gap-2">
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => handleEditClick(tag)}
+                            >
+                              <Pencil className="h-4 w-4 mr-1" /> Edit
+                            </Button>
+                            <AlertDialog>
+                              <AlertDialogTrigger asChild>
+                                <Button
+                                  variant="destructive"
+                                  size="sm"
+                                  onClick={() => handleDeleteClick(tag)}
+                                >
+                                  <Trash2 className="h-4 w-4 mr-1" /> Delete
+                                </Button>
+                              </AlertDialogTrigger>
+                              <AlertDialogContent>
+                                <AlertDialogHeader>
+                                  <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+                                  <AlertDialogDescription>
+                                    This will permanently delete the tag "{tag.name}".
+                                    This action cannot be undone.
+                                  </AlertDialogDescription>
+                                </AlertDialogHeader>
+                                <AlertDialogFooter>
+                                  <AlertDialogCancel onClick={cancelDelete}>
+                                    Cancel
+                                  </AlertDialogCancel>
+                                  <AlertDialogAction onClick={confirmDelete}>
+                                    Delete
+                                  </AlertDialogAction>
+                                </AlertDialogFooter>
+                              </AlertDialogContent>
+                            </AlertDialog>
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
+            )}
+          </CardContent>
+        </Card>
       </div>
     </AdminLayout>
   );

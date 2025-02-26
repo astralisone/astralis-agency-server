@@ -169,6 +169,7 @@ app.post('/api/marketplace', async (req, res) => {
   }
 });
 
+// Blog routes
 app.get('/api/blog', async (req, res) => {
   try {
     const { limit = 10, page = 1, search, category, status, sortBy = 'publishedAt', order = 'desc' } = req.query;
@@ -249,339 +250,7 @@ app.get('/api/blog', async (req, res) => {
   }
 });
 
-// Get a single blog post by ID
-app.get('/api/blog/:id', async (req, res) => {
-  try {
-    const { id } = req.params;
-    
-    const post = await prisma.post.findUnique({
-      where: { id },
-      include: {
-        author: {
-          select: {
-            id: true,
-            name: true,
-            avatar: true,
-          },
-        },
-        category: true,
-        tags: true,
-        _count: {
-          select: {
-            comments: true,
-            likes: true,
-          },
-        },
-      },
-    });
-
-    if (!post) {
-      return res.status(404).json({
-        status: 'error',
-        message: 'Blog post not found',
-      });
-    }
-
-    // Increment view count
-    await prisma.post.update({
-      where: { id },
-      data: {
-        viewCount: {
-          increment: 1,
-        },
-      },
-    });
-
-    res.json({
-      status: 'success',
-      data: post,
-    });
-  } catch (error) {
-    console.error('Error fetching blog post:', error);
-    res.status(500).json({
-      status: 'error',
-      message: 'Failed to fetch blog post',
-    });
-  }
-});
-
-// Create a new blog post
-app.post('/api/blog', async (req, res) => {
-  try {
-    const {
-      title,
-      slug,
-      content,
-      excerpt,
-      featuredImage,
-      status,
-      categoryId,
-      featured,
-      tags,
-    } = req.body;
-
-    // Validate required fields
-    if (!title || !slug || !content || !categoryId || !status) {
-      return res.status(400).json({
-        status: 'error',
-        message: 'Missing required fields',
-      });
-    }
-
-    // Check if slug already exists
-    const existingPost = await prisma.post.findUnique({
-      where: { slug },
-    });
-
-    if (existingPost) {
-      return res.status(409).json({
-        status: 'error',
-        message: 'A post with this slug already exists',
-      });
-    }
-
-    // Create the blog post
-    const newPost = await prisma.post.create({
-      data: {
-        title,
-        slug,
-        content,
-        excerpt,
-        featuredImage,
-        status,
-        featured: Boolean(featured),
-        publishedAt: status === 'PUBLISHED' ? new Date() : null,
-        category: {
-          connect: { id: categoryId },
-        },
-        author: {
-          // For now, connect to the first admin user
-          // In a real app, this would be the authenticated user
-          connect: { id: (await prisma.user.findFirst({ where: { role: 'ADMIN' } })).id },
-        },
-        ...(tags && tags.length > 0
-          ? {
-              tags: {
-                connect: tags.map((tagId) => ({ id: tagId })),
-              },
-            }
-          : {}),
-      },
-      include: {
-        category: true,
-        author: {
-          select: {
-            id: true,
-            name: true,
-            avatar: true,
-          },
-        },
-        tags: true,
-        _count: {
-          select: {
-            comments: true,
-            likes: true,
-          },
-        },
-      },
-    });
-
-    res.status(201).json({
-      status: 'success',
-      data: newPost,
-    });
-  } catch (error) {
-    console.error('Error creating blog post:', error);
-    res.status(500).json({
-      status: 'error',
-      message: 'Failed to create blog post',
-      error: error.message,
-    });
-  }
-});
-
-// Update a blog post
-app.patch('/api/blog/:id', async (req, res) => {
-  try {
-    const { id } = req.params;
-    const {
-      title,
-      slug,
-      content,
-      excerpt,
-      featuredImage,
-      status,
-      categoryId,
-      featured,
-      tags,
-    } = req.body;
-
-    // Check if post exists
-    const existingPost = await prisma.post.findUnique({
-      where: { id },
-    });
-
-    if (!existingPost) {
-      return res.status(404).json({
-        status: 'error',
-        message: 'Blog post not found',
-      });
-    }
-
-    // Check if slug is unique (if changed)
-    if (slug !== existingPost.slug) {
-      const slugExists = await prisma.post.findUnique({
-        where: { slug },
-      });
-
-      if (slugExists) {
-        return res.status(400).json({
-          status: 'error',
-          message: 'Slug already exists',
-        });
-      }
-    }
-
-    // Check if status changed to PUBLISHED
-    const publishedAt = 
-      status === 'PUBLISHED' && existingPost.status !== 'PUBLISHED'
-        ? new Date()
-        : existingPost.publishedAt;
-
-    // Update the post
-    const updatedPost = await prisma.post.update({
-      where: { id },
-      data: {
-        title,
-        slug,
-        content,
-        excerpt,
-        featuredImage,
-        status,
-        featured: Boolean(featured),
-        publishedAt,
-        category: {
-          connect: { id: categoryId },
-        },
-        tags: {
-          set: [], // First disconnect all tags
-          connect: tags?.map(tagId => ({ id: tagId })) || [], // Then connect the selected ones
-        },
-      },
-      include: {
-        category: {
-          select: {
-            id: true,
-            name: true,
-            slug: true,
-          },
-        },
-        author: {
-          select: {
-            id: true,
-            name: true,
-            avatar: true,
-          },
-        },
-        tags: {
-          select: {
-            id: true,
-            name: true,
-            slug: true,
-          },
-        },
-        _count: {
-          select: {
-            comments: true,
-            likes: true,
-          },
-        },
-      },
-    });
-
-    res.json({
-      status: 'success',
-      data: updatedPost,
-      message: 'Blog post updated successfully',
-    });
-  } catch (error) {
-    console.error('Error updating blog post:', error);
-    res.status(500).json({
-      status: 'error',
-      message: 'Failed to update blog post',
-      error: error.message,
-    });
-  }
-});
-
-// Delete a blog post
-app.delete('/api/blog/:id', async (req, res) => {
-  try {
-    const { id } = req.params;
-
-    // Check if post exists
-    const existingPost = await prisma.post.findUnique({
-      where: { id },
-    });
-
-    if (!existingPost) {
-      return res.status(404).json({
-        status: 'error',
-        message: 'Blog post not found',
-      });
-    }
-
-    // Delete the post
-    await prisma.post.delete({
-      where: { id },
-    });
-
-    res.json({
-      status: 'success',
-      message: 'Blog post deleted successfully',
-    });
-  } catch (error) {
-    console.error('Error deleting blog post:', error);
-    res.status(500).json({
-      status: 'error',
-      message: 'Failed to delete blog post',
-      error: error.message,
-    });
-  }
-});
-
-app.get('/api/marketplace/categories', async (req, res) => {
-  try {
-    const categories = await prisma.category.findMany({
-      select: {
-        id: true,
-        name: true,
-        slug: true,
-        description: true,
-        _count: {
-          select: {
-            marketplaceItems: true,
-          },
-        },
-      },
-      orderBy: {
-        name: 'asc',
-      },
-    });
-
-    res.json({
-      status: 'success',
-      data: categories,
-    });
-  } catch (error) {
-    console.error('Error fetching categories:', error);
-    res.status(500).json({
-      status: 'error',
-      message: 'Failed to fetch categories',
-    });
-  }
-});
-
+// Blog categories routes
 app.get('/api/blog/categories', async (req, res) => {
   try {
     const categories = await prisma.category.findMany({
@@ -592,24 +261,25 @@ app.get('/api/blog/categories', async (req, res) => {
         description: true,
         _count: {
           select: {
-            posts: true,
-          },
-        },
+            posts: true
+          }
+        }
       },
       orderBy: {
         name: 'asc',
       },
     });
-
+    
     res.json({
       status: 'success',
-      data: categories,
+      data: categories
     });
   } catch (error) {
-    console.error('Error fetching blog categories:', error);
-    res.status(500).json({
+    console.error('Error fetching categories:', error);
+    res.status(500).json({ 
       status: 'error',
-      message: 'Failed to fetch blog categories',
+      message: 'Failed to fetch categories',
+      error: error.message
     });
   }
 });
@@ -772,37 +442,7 @@ app.delete('/api/blog/categories/:id', async (req, res) => {
   }
 });
 
-app.get('/api/marketplace/tags', async (req, res) => {
-  try {
-    const tags = await prisma.tag.findMany({
-      select: {
-        id: true,
-        name: true,
-        slug: true,
-        _count: {
-          select: {
-            marketplaceItems: true,
-          },
-        },
-      },
-      orderBy: {
-        name: 'asc',
-      },
-    });
-
-    res.json({
-      status: 'success',
-      data: tags,
-    });
-  } catch (error) {
-    console.error('Error fetching tags:', error);
-    res.status(500).json({
-      status: 'error',
-      message: 'Failed to fetch tags',
-    });
-  }
-});
-
+// Blog tags routes
 app.get('/api/blog/tags', async (req, res) => {
   try {
     const tags = await prisma.tag.findMany({
@@ -994,6 +634,101 @@ app.delete('/api/blog/tags/:id', async (req, res) => {
       status: 'error',
       message: 'Failed to delete tag',
       error: error.message 
+    });
+  }
+});
+
+// Get a single blog post by ID
+app.get('/api/blog/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    
+    const post = await prisma.post.findUnique({
+      where: { id },
+      include: {
+        author: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+            avatar: true,
+          },
+        },
+        category: true,
+        tags: true,
+      },
+    });
+
+    if (!post) {
+      return res.status(404).json({ status: 'error', message: 'Blog post not found' });
+    }
+
+    res.json({ status: 'success', data: post });
+  } catch (error) {
+    console.error('Error fetching blog post:', error);
+    res.status(500).json({ status: 'error', message: 'Failed to fetch blog post' });
+  }
+});
+
+app.get('/api/marketplace/categories', async (req, res) => {
+  try {
+    const categories = await prisma.category.findMany({
+      select: {
+        id: true,
+        name: true,
+        slug: true,
+        description: true,
+        _count: {
+          select: {
+            marketplaceItems: true,
+          },
+        },
+      },
+      orderBy: {
+        name: 'asc',
+      },
+    });
+
+    res.json({
+      status: 'success',
+      data: categories,
+    });
+  } catch (error) {
+    console.error('Error fetching categories:', error);
+    res.status(500).json({
+      status: 'error',
+      message: 'Failed to fetch categories',
+    });
+  }
+});
+
+app.get('/api/marketplace/tags', async (req, res) => {
+  try {
+    const tags = await prisma.tag.findMany({
+      select: {
+        id: true,
+        name: true,
+        slug: true,
+        _count: {
+          select: {
+            marketplaceItems: true,
+          },
+        },
+      },
+      orderBy: {
+        name: 'asc',
+      },
+    });
+
+    res.json({
+      status: 'success',
+      data: tags,
+    });
+  } catch (error) {
+    console.error('Error fetching tags:', error);
+    res.status(500).json({
+      status: 'error',
+      message: 'Failed to fetch tags',
     });
   }
 });

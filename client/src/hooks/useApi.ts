@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 
 // Define the API base URL with port 4000
 const API_BASE_URL = 'http://localhost:4000';
@@ -19,6 +19,7 @@ interface UseApiOptions {
   enabled?: boolean;
   onSuccess?: (data: any) => void;
   onError?: (error: ApiError) => void;
+  method?: 'POST' | 'PUT' | 'PATCH' | 'DELETE';
 }
 
 export function useApi<T>(
@@ -31,10 +32,43 @@ export function useApi<T>(
 
   const { enabled = true, onSuccess, onError } = options;
 
+  const fetchData = useCallback(async () => {
+    if (!enabled) {
+      setIsLoading(false);
+      return;
+    }
+
+    try {
+      setIsLoading(true);
+      // Use the API_BASE_URL constant
+      console.log(`Fetching data from: ${API_BASE_URL}/api${endpoint}`);
+      const response = await fetch(`${API_BASE_URL}/api${endpoint}`);
+      const result: ApiResponse<T> = await response.json();
+      console.log(`API response for ${endpoint}:`, result);
+
+      if (!response.ok) {
+        throw result;
+      }
+
+      setData(result.data);
+      console.log(`Data set for ${endpoint}:`, result.data);
+      setError(null);
+      onSuccess?.(result.data);
+    } catch (err) {
+      const apiError = err as ApiError;
+      console.error(`Error fetching data from ${endpoint}:`, apiError);
+      setError(apiError);
+      setData(null);
+      onError?.(apiError);
+    } finally {
+      setIsLoading(false);
+    }
+  }, [endpoint, enabled, onSuccess, onError]);
+
   useEffect(() => {
     let isMounted = true;
 
-    const fetchData = async () => {
+    const fetchDataWithMountCheck = async () => {
       if (!enabled) {
         setIsLoading(false);
         return;
@@ -43,8 +77,10 @@ export function useApi<T>(
       try {
         setIsLoading(true);
         // Use the API_BASE_URL constant
+        console.log(`Fetching data from: ${API_BASE_URL}/api${endpoint}`);
         const response = await fetch(`${API_BASE_URL}/api${endpoint}`);
         const result: ApiResponse<T> = await response.json();
+        console.log(`API response for ${endpoint}:`, result);
 
         if (!response.ok) {
           throw result;
@@ -52,12 +88,14 @@ export function useApi<T>(
 
         if (isMounted) {
           setData(result.data);
+          console.log(`Data set for ${endpoint}:`, result.data);
           setError(null);
           onSuccess?.(result.data);
         }
       } catch (err) {
         if (isMounted) {
           const apiError = err as ApiError;
+          console.error(`Error fetching data from ${endpoint}:`, apiError);
           setError(apiError);
           setData(null);
           onError?.(apiError);
@@ -69,36 +107,44 @@ export function useApi<T>(
       }
     };
 
-    fetchData();
+    fetchDataWithMountCheck();
 
     return () => {
       isMounted = false;
     };
-  }, [endpoint, enabled]);
+  }, [endpoint, enabled, onSuccess, onError]);
 
-  return { data, error, isLoading };
+  const refetch = useCallback(() => {
+    return fetchData();
+  }, [fetchData]);
+
+  return { data, error, isLoading, refetch };
 }
 
 export function useApiMutation<T, D = any>(
-  endpoint: string,
+  endpoint: string | ((param?: any) => string),
   options: UseApiOptions = {}
 ) {
   const [data, setData] = useState<T | null>(null);
   const [error, setError] = useState<ApiError | null>(null);
   const [isLoading, setIsLoading] = useState(false);
 
-  const { onSuccess, onError } = options;
+  const { onSuccess, onError, method: defaultMethod = 'POST' } = options;
 
-  const mutate = async (payload: D, method: 'POST' | 'PUT' | 'PATCH' | 'DELETE' = 'POST') => {
+  const mutate = async (payload: D, param?: any, method: 'POST' | 'PUT' | 'PATCH' | 'DELETE' = defaultMethod) => {
     try {
       setIsLoading(true);
+      // Determine the endpoint
+      const finalEndpoint = typeof endpoint === 'function' ? endpoint(param) : endpoint;
+      
       // Use the API_BASE_URL constant
-      const response = await fetch(`${API_BASE_URL}/api${endpoint}`, {
+      const response = await fetch(`${API_BASE_URL}/api${finalEndpoint}`, {
         method,
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify(payload),
+        // Don't include body for DELETE requests or when payload is null
+        ...(method !== 'DELETE' && payload !== null && { body: JSON.stringify(payload) }),
       });
 
       const result: ApiResponse<T> = await response.json();
