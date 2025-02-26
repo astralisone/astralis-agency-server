@@ -1,4 +1,5 @@
 import { render, screen, waitFor, fireEvent } from '@testing-library/react';
+import '@testing-library/jest-dom';
 import { BrowserRouter } from 'react-router-dom';
 import { ThemeProvider } from '@/components/providers/theme-provider';
 import { HomePage } from '@/pages/Home';
