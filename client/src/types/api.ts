@@ -7,22 +7,26 @@ export interface MarketplaceItem {
   imageUrl: string;
   status: 'AVAILABLE' | 'SOLD_OUT' | 'COMING_SOON';
   category: {
+    id: string;
     name: string;
     slug: string;
   };
   seller: {
+    id: string;
     name: string;
     avatar: string | null;
   };
   specifications: Record<string, any> | null;
   features: string[];
   tags: Array<{
+    id: string;
     name: string;
     slug: string;
   }>;
   stock: number;
   discountPrice: number | null;
   featured: boolean;
+  published: boolean;
   createdAt: string;
   updatedAt: string;
 }
@@ -37,14 +41,17 @@ export interface BlogPost {
   status: 'DRAFT' | 'PUBLISHED' | 'ARCHIVED';
   publishedAt: string | null;
   author: {
+    id: string;
     name: string;
     avatar: string | null;
   };
   category: {
+    id: string;
     name: string;
     slug: string;
   };
   tags: Array<{
+    id: string;
     name: string;
     slug: string;
   }>;
@@ -71,6 +78,7 @@ export interface PaginatedResponse<T> {
 }
 
 export interface Category {
+  id: string;
   name: string;
   slug: string;
   description: string | null;
@@ -81,6 +89,7 @@ export interface Category {
 }
 
 export interface Tag {
+  id: string;
   name: string;
   slug: string;
   _count: {

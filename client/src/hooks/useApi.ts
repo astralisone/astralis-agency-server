@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 
-// Remove the hardcoded API base URL since we're using Vite's proxy
-// const API_BASE_URL = 'http://localhost:5000';
+// Define the API base URL with port 4000
+const API_BASE_URL = 'http://localhost:4000';
 
 interface ApiResponse<T> {
   status: 'success' | 'error';
@@ -42,8 +42,8 @@ export function useApi<T>(
 
       try {
         setIsLoading(true);
-        // Use relative path since we're using Vite's proxy
-        const response = await fetch(`/api${endpoint}`);
+        // Use the API_BASE_URL constant
+        const response = await fetch(`${API_BASE_URL}/api${endpoint}`);
         const result: ApiResponse<T> = await response.json();
 
         if (!response.ok) {
@@ -92,8 +92,8 @@ export function useApiMutation<T, D = any>(
   const mutate = async (payload: D, method: 'POST' | 'PUT' | 'PATCH' | 'DELETE' = 'POST') => {
     try {
       setIsLoading(true);
-      // Use relative path since we're using Vite's proxy
-      const response = await fetch(`/api${endpoint}`, {
+      // Use the API_BASE_URL constant
+      const response = await fetch(`${API_BASE_URL}/api${endpoint}`, {
         method,
         headers: {
           'Content-Type': 'application/json',

@@ -2,10 +2,11 @@ const express = require('express');
 const path = require('path');
 const cors = require('cors');
 const { PrismaClient } = require('@prisma/client');
+require('dotenv').config(); // Make sure dotenv is loaded
 
 const prisma = new PrismaClient();
 const app = express();
-const PORT = process.env.PORT || 5000;
+const PORT = process.env.PORT || 4000; // Use PORT from .env or default to 4000
 
 // Enable CORS for all routes
 app.use(cors());  // Simplified CORS configuration
@@ -74,19 +75,137 @@ app.get('/api/marketplace', async (req, res) => {
   }
 });
 
+// Create a new marketplace item
+app.post('/api/marketplace', async (req, res) => {
+  try {
+    const {
+      title,
+      slug,
+      description,
+      price,
+      discountPrice,
+      imageUrl,
+      categoryId,
+      status,
+      stock,
+      featured,
+      published,
+      tags,
+      features,
+    } = req.body;
+
+    // Validate required fields
+    if (!title || !slug || !description || !price || !imageUrl || !categoryId || !status) {
+      return res.status(400).json({
+        status: 'error',
+        message: 'Missing required fields',
+      });
+    }
+
+    // Check if slug already exists
+    const existingItem = await prisma.marketplaceItem.findUnique({
+      where: { slug },
+    });
+
+    if (existingItem) {
+      return res.status(409).json({
+        status: 'error',
+        message: 'An item with this slug already exists',
+      });
+    }
+
+    // Create the marketplace item
+    const newItem = await prisma.marketplaceItem.create({
+      data: {
+        title,
+        slug,
+        description,
+        price: parseFloat(price),
+        discountPrice: discountPrice ? parseFloat(discountPrice) : null,
+        imageUrl,
+        status,
+        stock: parseInt(stock, 10),
+        featured: Boolean(featured),
+        published: Boolean(published),
+        features: features || [],
+        category: {
+          connect: { id: categoryId },
+        },
+        seller: {
+          // For now, connect to the first admin user
+          // In a real app, this would be the authenticated user
+          connect: { id: (await prisma.user.findFirst({ where: { role: 'ADMIN' } })).id },
+        },
+        ...(tags && tags.length > 0
+          ? {
+              tags: {
+                connect: tags.map((tagId) => ({ id: tagId })),
+              },
+            }
+          : {}),
+      },
+      include: {
+        category: true,
+        seller: {
+          select: {
+            name: true,
+            avatar: true,
+          },
+        },
+        tags: true,
+      },
+    });
+
+    res.status(201).json({
+      status: 'success',
+      data: newItem,
+    });
+  } catch (error) {
+    console.error('Error creating marketplace item:', error);
+    res.status(500).json({
+      status: 'error',
+      message: 'Failed to create marketplace item',
+    });
+  }
+});
+
 app.get('/api/blog', async (req, res) => {
   try {
-    const { limit = 10, page = 1 } = req.query;
+    const { limit = 10, page = 1, search, category, status, sortBy = 'publishedAt', order = 'desc' } = req.query;
     const skip = (page - 1) * limit;
+
+    // Build where clause
+    const where = {};
+    
+    if (search) {
+      where.OR = [
+        { title: { contains: search, mode: 'insensitive' } },
+        { content: { contains: search, mode: 'insensitive' } },
+      ];
+    }
+    
+    if (category) {
+      where.category = { slug: category };
+    }
+    
+    if (status) {
+      where.status = status;
+    } else {
+      // Default to only published posts for public API
+      where.status = 'PUBLISHED';
+    }
+
+    // Build orderBy
+    const orderBy = {};
+    orderBy[sortBy] = order.toLowerCase();
 
     const [posts, total] = await Promise.all([
       prisma.post.findMany({
-        where: {
-          status: 'PUBLISHED',
-        },
+        where,
         include: {
           author: {
             select: {
+              id: true,
               name: true,
               avatar: true,
             },
@@ -100,17 +219,11 @@ app.get('/api/blog', async (req, res) => {
             },
           },
         },
-        orderBy: {
-          publishedAt: 'desc',
-        },
+        orderBy,
         skip,
         take: Number(limit),
       }),
-      prisma.post.count({
-        where: {
-          status: 'PUBLISHED',
-        },
-      }),
+      prisma.post.count({ where }),
     ]);
 
     res.json({
@@ -136,10 +249,312 @@ app.get('/api/blog', async (req, res) => {
   }
 });
 
+// Get a single blog post by ID
+app.get('/api/blog/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    
+    const post = await prisma.post.findUnique({
+      where: { id },
+      include: {
+        author: {
+          select: {
+            id: true,
+            name: true,
+            avatar: true,
+          },
+        },
+        category: true,
+        tags: true,
+        _count: {
+          select: {
+            comments: true,
+            likes: true,
+          },
+        },
+      },
+    });
+
+    if (!post) {
+      return res.status(404).json({
+        status: 'error',
+        message: 'Blog post not found',
+      });
+    }
+
+    // Increment view count
+    await prisma.post.update({
+      where: { id },
+      data: {
+        viewCount: {
+          increment: 1,
+        },
+      },
+    });
+
+    res.json({
+      status: 'success',
+      data: post,
+    });
+  } catch (error) {
+    console.error('Error fetching blog post:', error);
+    res.status(500).json({
+      status: 'error',
+      message: 'Failed to fetch blog post',
+    });
+  }
+});
+
+// Create a new blog post
+app.post('/api/blog', async (req, res) => {
+  try {
+    const {
+      title,
+      slug,
+      content,
+      excerpt,
+      featuredImage,
+      status,
+      categoryId,
+      featured,
+      tags,
+    } = req.body;
+
+    // Validate required fields
+    if (!title || !slug || !content || !categoryId || !status) {
+      return res.status(400).json({
+        status: 'error',
+        message: 'Missing required fields',
+      });
+    }
+
+    // Check if slug already exists
+    const existingPost = await prisma.post.findUnique({
+      where: { slug },
+    });
+
+    if (existingPost) {
+      return res.status(409).json({
+        status: 'error',
+        message: 'A post with this slug already exists',
+      });
+    }
+
+    // Create the blog post
+    const newPost = await prisma.post.create({
+      data: {
+        title,
+        slug,
+        content,
+        excerpt,
+        featuredImage,
+        status,
+        featured: Boolean(featured),
+        publishedAt: status === 'PUBLISHED' ? new Date() : null,
+        category: {
+          connect: { id: categoryId },
+        },
+        author: {
+          // For now, connect to the first admin user
+          // In a real app, this would be the authenticated user
+          connect: { id: (await prisma.user.findFirst({ where: { role: 'ADMIN' } })).id },
+        },
+        ...(tags && tags.length > 0
+          ? {
+              tags: {
+                connect: tags.map((tagId) => ({ id: tagId })),
+              },
+            }
+          : {}),
+      },
+      include: {
+        category: true,
+        author: {
+          select: {
+            id: true,
+            name: true,
+            avatar: true,
+          },
+        },
+        tags: true,
+        _count: {
+          select: {
+            comments: true,
+            likes: true,
+          },
+        },
+      },
+    });
+
+    res.status(201).json({
+      status: 'success',
+      data: newPost,
+    });
+  } catch (error) {
+    console.error('Error creating blog post:', error);
+    res.status(500).json({
+      status: 'error',
+      message: 'Failed to create blog post',
+      error: error.message,
+    });
+  }
+});
+
+// Update a blog post
+app.patch('/api/blog/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const {
+      title,
+      slug,
+      content,
+      excerpt,
+      featuredImage,
+      status,
+      categoryId,
+      featured,
+      tags,
+    } = req.body;
+
+    // Check if post exists
+    const existingPost = await prisma.post.findUnique({
+      where: { id },
+    });
+
+    if (!existingPost) {
+      return res.status(404).json({
+        status: 'error',
+        message: 'Blog post not found',
+      });
+    }
+
+    // Check if slug is unique (if changed)
+    if (slug !== existingPost.slug) {
+      const slugExists = await prisma.post.findUnique({
+        where: { slug },
+      });
+
+      if (slugExists) {
+        return res.status(400).json({
+          status: 'error',
+          message: 'Slug already exists',
+        });
+      }
+    }
+
+    // Check if status changed to PUBLISHED
+    const publishedAt = 
+      status === 'PUBLISHED' && existingPost.status !== 'PUBLISHED'
+        ? new Date()
+        : existingPost.publishedAt;
+
+    // Update the post
+    const updatedPost = await prisma.post.update({
+      where: { id },
+      data: {
+        title,
+        slug,
+        content,
+        excerpt,
+        featuredImage,
+        status,
+        featured: Boolean(featured),
+        publishedAt,
+        category: {
+          connect: { id: categoryId },
+        },
+        tags: {
+          set: [], // First disconnect all tags
+          connect: tags?.map(tagId => ({ id: tagId })) || [], // Then connect the selected ones
+        },
+      },
+      include: {
+        category: {
+          select: {
+            id: true,
+            name: true,
+            slug: true,
+          },
+        },
+        author: {
+          select: {
+            id: true,
+            name: true,
+            avatar: true,
+          },
+        },
+        tags: {
+          select: {
+            id: true,
+            name: true,
+            slug: true,
+          },
+        },
+        _count: {
+          select: {
+            comments: true,
+            likes: true,
+          },
+        },
+      },
+    });
+
+    res.json({
+      status: 'success',
+      data: updatedPost,
+      message: 'Blog post updated successfully',
+    });
+  } catch (error) {
+    console.error('Error updating blog post:', error);
+    res.status(500).json({
+      status: 'error',
+      message: 'Failed to update blog post',
+      error: error.message,
+    });
+  }
+});
+
+// Delete a blog post
+app.delete('/api/blog/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    // Check if post exists
+    const existingPost = await prisma.post.findUnique({
+      where: { id },
+    });
+
+    if (!existingPost) {
+      return res.status(404).json({
+        status: 'error',
+        message: 'Blog post not found',
+      });
+    }
+
+    // Delete the post
+    await prisma.post.delete({
+      where: { id },
+    });
+
+    res.json({
+      status: 'success',
+      message: 'Blog post deleted successfully',
+    });
+  } catch (error) {
+    console.error('Error deleting blog post:', error);
+    res.status(500).json({
+      status: 'error',
+      message: 'Failed to delete blog post',
+      error: error.message,
+    });
+  }
+});
+
 app.get('/api/marketplace/categories', async (req, res) => {
   try {
     const categories = await prisma.category.findMany({
       select: {
+        id: true,
         name: true,
         slug: true,
         description: true,
@@ -167,10 +582,201 @@ app.get('/api/marketplace/categories', async (req, res) => {
   }
 });
 
+app.get('/api/blog/categories', async (req, res) => {
+  try {
+    const categories = await prisma.category.findMany({
+      select: {
+        id: true,
+        name: true,
+        slug: true,
+        description: true,
+        _count: {
+          select: {
+            posts: true,
+          },
+        },
+      },
+      orderBy: {
+        name: 'asc',
+      },
+    });
+
+    res.json({
+      status: 'success',
+      data: categories,
+    });
+  } catch (error) {
+    console.error('Error fetching blog categories:', error);
+    res.status(500).json({
+      status: 'error',
+      message: 'Failed to fetch blog categories',
+    });
+  }
+});
+
+app.post('/api/blog/categories', async (req, res) => {
+  try {
+    const { name, slug, description } = req.body;
+
+    // Validate required fields
+    if (!name || !slug) {
+      return res.status(400).json({ 
+        status: 'error',
+        message: 'Name and slug are required' 
+      });
+    }
+
+    // Check if slug already exists
+    const existingCategory = await prisma.category.findUnique({
+      where: { slug },
+    });
+
+    if (existingCategory) {
+      return res.status(400).json({ 
+        status: 'error',
+        message: 'A category with this slug already exists' 
+      });
+    }
+
+    const category = await prisma.category.create({
+      data: {
+        name,
+        slug,
+        description: description || '',
+      },
+    });
+
+    res.status(201).json({
+      status: 'success',
+      data: category
+    });
+  } catch (error) {
+    console.error('Error creating category:', error);
+    res.status(500).json({ 
+      status: 'error',
+      message: 'Failed to create category',
+      error: error.message 
+    });
+  }
+});
+
+app.put('/api/blog/categories/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { name, slug, description } = req.body;
+
+    // Validate required fields
+    if (!name || !slug) {
+      return res.status(400).json({ 
+        status: 'error',
+        message: 'Name and slug are required' 
+      });
+    }
+
+    // Check if category exists
+    const existingCategory = await prisma.category.findUnique({
+      where: { id },
+    });
+
+    if (!existingCategory) {
+      return res.status(404).json({ 
+        status: 'error',
+        message: 'Category not found' 
+      });
+    }
+
+    // Check if slug already exists (excluding current category)
+    const slugExists = await prisma.category.findFirst({
+      where: {
+        slug,
+        id: { not: id },
+      },
+    });
+
+    if (slugExists) {
+      return res.status(400).json({ 
+        status: 'error',
+        message: 'A category with this slug already exists' 
+      });
+    }
+
+    const updatedCategory = await prisma.category.update({
+      where: { id },
+      data: {
+        name,
+        slug,
+        description: description || existingCategory.description || '',
+      },
+    });
+
+    res.json({
+      status: 'success',
+      data: updatedCategory
+    });
+  } catch (error) {
+    console.error('Error updating category:', error);
+    res.status(500).json({ 
+      status: 'error',
+      message: 'Failed to update category',
+      error: error.message 
+    });
+  }
+});
+
+app.delete('/api/blog/categories/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    // Check if category exists
+    const existingCategory = await prisma.category.findUnique({
+      where: { id },
+    });
+
+    if (!existingCategory) {
+      return res.status(404).json({ 
+        status: 'error',
+        message: 'Category not found' 
+      });
+    }
+
+    // Check if category is in use by any blog posts
+    const postsUsingCategory = await prisma.post.count({
+      where: {
+        categoryId: id,
+      },
+    });
+
+    if (postsUsingCategory > 0) {
+      return res.status(400).json({ 
+        status: 'error',
+        message: 'Cannot delete category that is in use by blog posts',
+        data: { postsCount: postsUsingCategory }
+      });
+    }
+
+    await prisma.category.delete({
+      where: { id },
+    });
+
+    res.json({ 
+      status: 'success',
+      message: 'Category deleted successfully'
+    });
+  } catch (error) {
+    console.error('Error deleting category:', error);
+    res.status(500).json({ 
+      status: 'error',
+      message: 'Failed to delete category',
+      error: error.message 
+    });
+  }
+});
+
 app.get('/api/marketplace/tags', async (req, res) => {
   try {
     const tags = await prisma.tag.findMany({
       select: {
+        id: true,
         name: true,
         slug: true,
         _count: {
@@ -193,6 +799,380 @@ app.get('/api/marketplace/tags', async (req, res) => {
     res.status(500).json({
       status: 'error',
       message: 'Failed to fetch tags',
+    });
+  }
+});
+
+app.get('/api/blog/tags', async (req, res) => {
+  try {
+    const tags = await prisma.tag.findMany({
+      select: {
+        id: true,
+        name: true,
+        slug: true,
+        _count: {
+          select: {
+            posts: true
+          }
+        }
+      },
+      orderBy: {
+        name: 'asc',
+      },
+    });
+    
+    res.json({
+      status: 'success',
+      data: tags.map(tag => ({
+        ...tag,
+        postsCount: tag._count.posts
+      }))
+    });
+  } catch (error) {
+    console.error('Error fetching tags:', error);
+    res.status(500).json({ 
+      status: 'error',
+      message: 'Failed to fetch tags',
+      error: error.message
+    });
+  }
+});
+
+app.post('/api/blog/tags', async (req, res) => {
+  try {
+    const { name, slug } = req.body;
+
+    // Validate required fields
+    if (!name || !slug) {
+      return res.status(400).json({ 
+        status: 'error',
+        message: 'Name and slug are required' 
+      });
+    }
+
+    // Check if slug already exists
+    const existingTag = await prisma.tag.findUnique({
+      where: { slug },
+    });
+
+    if (existingTag) {
+      return res.status(400).json({ 
+        status: 'error',
+        message: 'A tag with this slug already exists' 
+      });
+    }
+
+    const tag = await prisma.tag.create({
+      data: {
+        name,
+        slug,
+      },
+    });
+
+    res.status(201).json({
+      status: 'success',
+      data: tag
+    });
+  } catch (error) {
+    console.error('Error creating tag:', error);
+    res.status(500).json({ 
+      status: 'error',
+      message: 'Failed to create tag',
+      error: error.message 
+    });
+  }
+});
+
+app.put('/api/blog/tags/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { name, slug } = req.body;
+
+    // Validate required fields
+    if (!name || !slug) {
+      return res.status(400).json({ 
+        status: 'error',
+        message: 'Name and slug are required' 
+      });
+    }
+
+    // Check if tag exists
+    const existingTag = await prisma.tag.findUnique({
+      where: { id },
+    });
+
+    if (!existingTag) {
+      return res.status(404).json({ 
+        status: 'error',
+        message: 'Tag not found' 
+      });
+    }
+
+    // Check if slug already exists (excluding current tag)
+    const slugExists = await prisma.tag.findFirst({
+      where: {
+        slug,
+        id: { not: id },
+      },
+    });
+
+    if (slugExists) {
+      return res.status(400).json({ 
+        status: 'error',
+        message: 'A tag with this slug already exists' 
+      });
+    }
+
+    const updatedTag = await prisma.tag.update({
+      where: { id },
+      data: {
+        name,
+        slug,
+      },
+    });
+
+    res.json({
+      status: 'success',
+      data: updatedTag
+    });
+  } catch (error) {
+    console.error('Error updating tag:', error);
+    res.status(500).json({ 
+      status: 'error',
+      message: 'Failed to update tag',
+      error: error.message 
+    });
+  }
+});
+
+app.delete('/api/blog/tags/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    // Check if tag exists
+    const existingTag = await prisma.tag.findUnique({
+      where: { id },
+    });
+
+    if (!existingTag) {
+      return res.status(404).json({ 
+        status: 'error',
+        message: 'Tag not found' 
+      });
+    }
+
+    // Check if tag is in use by any blog posts
+    const postsUsingTag = await prisma.post.count({
+      where: {
+        tags: {
+          some: {
+            id,
+          },
+        },
+      },
+    });
+
+    if (postsUsingTag > 0) {
+      return res.status(400).json({ 
+        status: 'error',
+        message: 'Cannot delete tag that is in use by blog posts',
+        data: { postsCount: postsUsingTag }
+      });
+    }
+
+    await prisma.tag.delete({
+      where: { id },
+    });
+
+    res.json({ 
+      status: 'success',
+      message: 'Tag deleted successfully'
+    });
+  } catch (error) {
+    console.error('Error deleting tag:', error);
+    res.status(500).json({ 
+      status: 'error',
+      message: 'Failed to delete tag',
+      error: error.message 
+    });
+  }
+});
+
+// Admin stats endpoint
+app.get('/api/admin/stats', async (req, res) => {
+  try {
+    const [marketplaceItems, blogPosts, users] = await Promise.all([
+      prisma.marketplaceItem.count(),
+      prisma.post.count(),
+      prisma.user.count(),
+    ]);
+
+    // Calculate total views (in a real app, this would be from analytics)
+    const totalViews = await prisma.post.aggregate({
+      _sum: {
+        viewCount: true,
+      },
+    });
+
+    res.json({
+      status: 'success',
+      data: {
+        marketplaceItems,
+        blogPosts,
+        users,
+        totalViews: totalViews._sum.viewCount || 0,
+      },
+    });
+  } catch (error) {
+    console.error('Error fetching admin stats:', error);
+    res.status(500).json({
+      status: 'error',
+      message: 'Failed to fetch admin stats',
+    });
+  }
+});
+
+// PATCH /api/marketplace/:id - Update a marketplace item
+app.patch('/api/marketplace/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const {
+      title,
+      slug,
+      description,
+      price,
+      discountPrice,
+      imageUrl,
+      categoryId,
+      status,
+      stock,
+      featured,
+      published,
+      features,
+      tags
+    } = req.body;
+
+    // Check if item exists
+    const existingItem = await prisma.marketplaceItem.findUnique({
+      where: { id },
+    });
+
+    if (!existingItem) {
+      return res.status(404).json({
+        status: 'error',
+        message: 'Marketplace item not found',
+      });
+    }
+
+    // Check if slug is unique (if changed)
+    if (slug !== existingItem.slug) {
+      const slugExists = await prisma.marketplaceItem.findUnique({
+        where: { slug },
+      });
+
+      if (slugExists) {
+        return res.status(400).json({
+          status: 'error',
+          message: 'Slug already exists',
+        });
+      }
+    }
+
+    // Update the item
+    const updatedItem = await prisma.marketplaceItem.update({
+      where: { id },
+      data: {
+        title,
+        slug,
+        description,
+        price,
+        discountPrice,
+        imageUrl,
+        status,
+        stock,
+        featured,
+        published,
+        features,
+        category: {
+          connect: { id: categoryId },
+        },
+        tags: {
+          set: [], // First disconnect all tags
+          connect: tags?.map(tagId => ({ id: tagId })) || [], // Then connect the selected ones
+        },
+      },
+      include: {
+        category: {
+          select: {
+            id: true,
+            name: true,
+            slug: true,
+          },
+        },
+        seller: {
+          select: {
+            id: true,
+            name: true,
+            avatar: true,
+          },
+        },
+        tags: {
+          select: {
+            id: true,
+            name: true,
+            slug: true,
+          },
+        },
+      },
+    });
+
+    res.json({
+      status: 'success',
+      data: updatedItem,
+      message: 'Marketplace item updated successfully',
+    });
+  } catch (error) {
+    console.error('Error updating marketplace item:', error);
+    res.status(500).json({
+      status: 'error',
+      message: 'Failed to update marketplace item',
+      error: error.message,
+    });
+  }
+});
+
+// DELETE /api/marketplace/:id - Delete a marketplace item
+app.delete('/api/marketplace/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    // Check if item exists
+    const existingItem = await prisma.marketplaceItem.findUnique({
+      where: { id },
+    });
+
+    if (!existingItem) {
+      return res.status(404).json({
+        status: 'error',
+        message: 'Marketplace item not found',
+      });
+    }
+
+    // Delete the item
+    await prisma.marketplaceItem.delete({
+      where: { id },
+    });
+
+    res.json({
+      status: 'success',
+      message: 'Marketplace item deleted successfully',
+    });
+  } catch (error) {
+    console.error('Error deleting marketplace item:', error);
+    res.status(500).json({
+      status: 'error',
+      message: 'Failed to delete marketplace item',
+      error: error.message,
     });
   }
 });
