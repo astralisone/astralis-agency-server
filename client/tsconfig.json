@@ -4,7 +4,8 @@
   "compilerOptions": {
     "outDir": "./dist",
     "rootDir": "./src",
-    "module": "commonjs",
+    "module": "es2020",
+    "moduleResolution": "node",
     "target": "es6",
     "useDefineForClassFields": true,
     "lib": ["ES2020", "DOM", "DOM.Iterable"],
@@ -22,6 +23,7 @@
     "paths": {
       "@/*": ["./src/*"]
     },
-    "forceConsistentCasingInFileNames": false
+    "forceConsistentCasingInFileNames": false,
+    "esModuleInterop": true
   }
 }
