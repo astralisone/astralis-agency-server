@@ -1,0 +1,107 @@
+# Astralis Agency Server Project Mapping
+
+## Project Overview
+This project is a full-stack application for Astralis Agency with a React frontend and Node.js/Express backend. The backend is being transitioned from JavaScript to TypeScript.
+
+## Current State
+- Server is running with TypeScript files imported directly from the src directory
+- API endpoints are functional (health, auth, blog, marketplace, testimonials, admin)
+- TypeScript compilation has errors that need to be addressed
+
+## Completed Work
+1. Converted server.js to server.ts
+2. Updated import paths in server.ts to point to src directory instead of dist
+3. Fixed authentication middleware imports in route files
+4. Removed .js extensions from import statements in various files
+5. Server is now running with tsx instead of node
+
+## Pending Work
+1. Fix TypeScript compilation errors in server code (88 errors related to Prisma types)
+2. Fix TypeScript compilation errors in client code (80 errors related to React imports and types)
+3. Update tsconfig.json files to enable esModuleInterop flag
+4. Update Prisma schema to match expected types
+
+## File Structure
+```
+AstralisAgencyServer/
+├── server.ts                   # Main entry point for the application
+├── package.json                # Project dependencies and scripts
+├── tsconfig.json               # TypeScript configuration
+├── .project.mapping            # This file - project documentation
+├── client/                     # Frontend React application
+│   ├── src/                    # React source code
+│   │   ├── components/         # Reusable UI components
+│   │   ├── pages/              # Page components
+│   │   ├── lib/                # Utility functions and hooks
+│   │   └── main.tsx            # React entry point
+│   ├── tsconfig.json           # Client TypeScript configuration
+│   └── package.json            # Client dependencies
+├── server/                     # Backend server code
+│   ├── src/                    # TypeScript source files
+│   │   ├── routes/             # API route definitions
+│   │   │   ├── auth.ts         # Authentication routes
+│   │   │   ├── blog.ts         # Blog content routes
+│   │   │   ├── marketplace.ts  # Marketplace product routes
+│   │   │   ├── admin.ts        # Admin panel routes
+│   │   │   ├── contact.ts      # Contact form routes
+│   │   │   ├── health.ts       # Health check routes
+│   │   │   └── testimonials.ts # Testimonials routes
+│   │   ├── controllers/        # Business logic for routes
+│   │   │   ├── authController.ts # Authentication logic
+│   │   │   └── ...
+│   │   ├── middleware/         # Express middleware
+│   │   │   ├── auth.ts         # Authentication middleware
+│   │   │   └── ...
+│   │   ├── models/             # Data models
+│   │   │   ├── User.ts         # User model
+│   │   │   ├── Product.ts      # Product model
+│   │   │   ├── ContactForm.ts  # Contact form model
+│   │   │   └── ...
+│   │   ├── config/             # Configuration files
+│   │   │   └── database.ts     # Database connection
+│   │   ├── services/           # Service layer
+│   │   │   └── email.ts        # Email service
+│   │   └── scripts/            # Utility scripts
+│   │       ├── setupDb.ts      # Database setup
+│   │       └── ...
+│   ├── dist/                   # Compiled JavaScript files (when built)
+│   ├── tsconfig.json           # Server TypeScript configuration
+│   └── package.json            # Server dependencies
+└── prisma/                     # Prisma ORM files
+    ├── schema.prisma           # Database schema definition
+    └── seed.ts                 # Database seeding script
+```
+
+## Key Files and Their Purpose
+
+### Root Files
+- `server.ts` - Main application entry point that sets up Express server, imports routes, and configures middleware
+- `tsconfig.json` - Root TypeScript configuration that extends to client and server
+
+### Server Files
+- `server/src/routes/*.ts` - Define API endpoints and route handlers
+- `server/src/middleware/auth.ts` - Authentication middleware for protected routes
+- `server/src/controllers/authController.ts` - Handles user authentication logic
+- `server/src/models/*.ts` - Data models using Sequelize/Prisma
+- `server/src/config/database.ts` - Database connection configuration
+- `server/src/services/email.ts` - Email sending functionality
+
+### Client Files
+- `client/src/main.tsx` - React application entry point
+- `client/src/components/` - Reusable UI components
+- `client/src/pages/` - Page components for different routes
+- `client/src/lib/` - Utility functions, hooks, and services
+
+### Database Files
+- `prisma/schema.prisma` - Defines database schema and relationships
+- `prisma/seed.ts` - Seeds the database with initial data
+
+## Running the Application
+- Development: `yarn dev` - Uses nodemon with tsx to run server.ts
+- Build: `yarn build:server` - Compiles TypeScript files to JavaScript in dist directory
+- Production: `yarn start` - Runs the compiled JavaScript files
+
+## Known Issues
+- TypeScript compilation fails due to type errors
+- Some import paths still use .js extension
+- Client build fails due to TypeScript errors 
