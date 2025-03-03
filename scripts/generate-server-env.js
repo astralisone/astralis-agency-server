@@ -1,4 +1,4 @@
-#!/usr/bin/env node
+w#!/usr/bin/env node
 
 /**
  * This script generates server environment variables from the root .env file

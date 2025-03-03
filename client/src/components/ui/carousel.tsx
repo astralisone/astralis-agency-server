@@ -1,5 +1,6 @@
 import React, { useCallback, useEffect, useState } from 'react'
-import useEmblaCarousel, { EmblaOptionsType, EmblaCarouselType } from 'embla-carousel-react'
+import useEmblaCarousel, { UseEmblaCarouselType } from 'embla-carousel-react'
+import type { EmblaOptionsType } from 'embla-carousel'
 import { Button } from '@/components/ui/button'
 import { ChevronLeft, ChevronRight } from 'lucide-react'
 import { cn } from '@/lib/utils'
@@ -35,7 +36,7 @@ export function Carousel({
   const scrollNext = useCallback(() => emblaApi && emblaApi.scrollNext(), [emblaApi])
   const scrollTo = useCallback((index: number) => emblaApi && emblaApi.scrollTo(index), [emblaApi])
 
-  const onSelect = useCallback((emblaApi: EmblaCarouselType) => {
+  const onSelect = useCallback((emblaApi: UseEmblaCarouselType[0]) => {
     setSelectedIndex(emblaApi.selectedScrollSnap())
   }, [])
 

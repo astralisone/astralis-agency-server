@@ -1,3 +1,4 @@
+import React, { useState } from 'react';
 import type { Meta, StoryObj } from '@storybook/react';
 import { Button } from './button';
 import {
@@ -116,7 +117,7 @@ export const WithSubmenu: Story = {
 // With Radio Items
 export const WithRadioItems: Story = {
   render: () => {
-    const [position, setPosition] = React.useState("bottom");
+    const [position, setPosition] = useState("bottom");
     return (
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
@@ -140,8 +141,8 @@ export const WithRadioItems: Story = {
 // With Checkboxes
 export const WithCheckboxes: Story = {
   render: () => {
-    const [showStatusBar, setShowStatusBar] = React.useState(true);
-    const [showActivityBar, setShowActivityBar] = React.useState(false);
+    const [showStatusBar, setShowStatusBar] = useState(true);
+    const [showActivityBar, setShowActivityBar] = useState(false);
     return (
       <DropdownMenu>
         <DropdownMenuTrigger asChild>

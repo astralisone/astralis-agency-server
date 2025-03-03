@@ -1,27 +1,29 @@
 {
-  "include": ["src"],
-  "exclude": ["node_modules", "dist"],
+  "include": ["server/src/**/*", "prisma/**/*", "server.ts"],
+  "exclude": ["node_modules", "dist", "client"],
   "compilerOptions": {
-    "outDir": "./dist",   // Make sure this points to 'dist'
-    "rootDir": "./src",   // Source files should be under 'src'
-    "module": "commonjs",
-    "target": "es6",
-    "useDefineForClassFields": true,
-    "lib": ["ES2020", "DOM", "DOM.Iterable"],
+    "outDir": "./server/dist",
+    "module": "NodeNext",
+    "moduleResolution": "NodeNext",
+    "target": "ES2020",
+    "lib": ["ES2020"],
+    "esModuleInterop": true,
     "skipLibCheck": true,
-    "allowImportingTsExtensions": true,
     "resolveJsonModule": true,
     "isolatedModules": true,
-    "noEmit": true,
-    "jsx": "react-jsx",
     "strict": true,
     "noUnusedLocals": true,
     "noUnusedParameters": true,
     "noFallthroughCasesInSwitch": true,
     "baseUrl": ".",
     "paths": {
-      "@/*": ["./src/*"]
-    }
+      "@/*": ["./server/src/*"]
+    },
+    "allowJs": true,
+    "forceConsistentCasingInFileNames": true
   },
-  
+  "ts-node": {
+    "esm": true,
+    "experimentalSpecifierResolution": "node"
+  }
 }

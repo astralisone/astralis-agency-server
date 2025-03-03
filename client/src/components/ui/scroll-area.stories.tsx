@@ -1,9 +1,9 @@
+import React from 'react';
 import type { Meta, StoryObj } from '@storybook/react';
 import { ScrollArea } from './scroll-area';
 import { Separator } from './separator';
+import { Button } from './button';
 import { cn } from '@/lib/utils';
-import React from 'react';
-import { Button } from './ui/button';
 
 const meta = {
   title: 'UI/ScrollArea',

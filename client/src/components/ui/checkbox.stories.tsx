@@ -1,7 +1,8 @@
+import React, { useState } from 'react';
 import type { Meta, StoryObj } from '@storybook/react';
 import { Checkbox } from './checkbox';
 import { Label } from './label';
-import React from 'react';
+import { Button } from './button';
 
 const meta = {
   title: 'UI/Checkbox',
@@ -49,13 +50,13 @@ export const DisabledStates: Story = {
 // Controlled Checkbox
 export const Controlled: Story = {
   render: () => {
-    const [checked, setChecked] = React.useState(false);
+    const [checked, setChecked] = useState(false);
     return (
       <div className="flex items-center space-x-2">
         <Checkbox
           id="controlled"
           checked={checked}
-          onCheckedChange={setChecked}
+          onCheckedChange={(checked) => setChecked(!!checked)}
         />
         <Label htmlFor="controlled">
           {checked ? 'Checked' : 'Unchecked'}
@@ -68,59 +69,43 @@ export const Controlled: Story = {
 // Form Example
 export const FormExample: Story = {
   render: () => {
-    const [preferences, setPreferences] = React.useState({
+    const [preferences, setPreferences] = useState({
       emails: true,
       offers: false,
       updates: true,
     });
-
     return (
-      <form className="w-[300px] space-y-4">
-        <div className="flex items-center space-x-2">
-          <Checkbox
-            id="emails"
-            checked={preferences.emails}
-            onCheckedChange={(checked) =>
-              setPreferences((prev) => ({ ...prev, emails: checked === true }))
-            }
-          />
-          <div className="grid gap-1.5 leading-none">
-            <Label htmlFor="emails">Marketing emails</Label>
-            <p className="text-sm text-muted-foreground">
-              Receive emails about new products and features.
-            </p>
+      <form className="space-y-6">
+        <div className="space-y-4">
+          <h4 className="text-sm font-medium leading-none">Notifications</h4>
+          <div className="space-y-3">
+            <div className="flex items-center space-x-2">
+              <Checkbox
+                id="emails"
+                checked={preferences.emails}
+                onCheckedChange={(checked) => setPreferences((prev) => ({ ...prev, emails: checked === true }))}
+              />
+              <Label htmlFor="emails">Email notifications</Label>
+            </div>
+            <div className="flex items-center space-x-2">
+              <Checkbox
+                id="offers"
+                checked={preferences.offers}
+                onCheckedChange={(checked) => setPreferences((prev) => ({ ...prev, offers: checked === true }))}
+              />
+              <Label htmlFor="offers">Special offers</Label>
+            </div>
+            <div className="flex items-center space-x-2">
+              <Checkbox
+                id="updates"
+                checked={preferences.updates}
+                onCheckedChange={(checked) => setPreferences((prev) => ({ ...prev, updates: checked === true }))}
+              />
+              <Label htmlFor="updates">Product updates</Label>
+            </div>
           </div>
         </div>
-        <div className="flex items-center space-x-2">
-          <Checkbox
-            id="offers"
-            checked={preferences.offers}
-            onCheckedChange={(checked) =>
-              setPreferences((prev) => ({ ...prev, offers: checked === true }))
-            }
-          />
-          <div className="grid gap-1.5 leading-none">
-            <Label htmlFor="offers">Special offers</Label>
-            <p className="text-sm text-muted-foreground">
-              Receive special offers and discounts.
-            </p>
-          </div>
-        </div>
-        <div className="flex items-center space-x-2">
-          <Checkbox
-            id="updates"
-            checked={preferences.updates}
-            onCheckedChange={(checked) =>
-              setPreferences((prev) => ({ ...prev, updates: checked === true }))
-            }
-          />
-          <div className="grid gap-1.5 leading-none">
-            <Label htmlFor="updates">Product updates</Label>
-            <p className="text-sm text-muted-foreground">
-              Get notified about product updates.
-            </p>
-          </div>
-        </div>
+        <Button type="submit">Submit</Button>
       </form>
     );
   },

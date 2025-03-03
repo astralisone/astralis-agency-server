@@ -9,8 +9,8 @@
     "server"
   ],
   "scripts": {
-    "start": "node --experimental-specifier-resolution=node server.js",
-    "start:prod": "node --experimental-specifier-resolution=node server.js",
+    "start": "tsx server.ts",
+    "start:prod": "tsx server.ts",
     "generate:env": "node scripts/generate-client-env.js",
     "generate:server-env": "node scripts/generate-server-env.js",
     "prebuild:client": "yarn generate:env",
@@ -18,17 +18,17 @@
     "build:client": "cd client && yarn build",
     "build:server": "cd server && yarn build",
     "build": "yarn build:client && yarn build:server",
-    "dev": "yarn generate:server-env && PORT=4000 nodemon --experimental-specifier-resolution=node server.js",
+    "dev": "yarn generate:server-env && PORT=4000 nodemon --exec tsx server.ts",
     "client:dev": "yarn generate:env && cd client && yarn dev",
-    "server:dev": "yarn generate:server-env && PORT=4000 nodemon --experimental-specifier-resolution=node server.js",
+    "server:dev": "yarn generate:server-env && PORT=4000 nodemon --exec tsx server.ts",
     "dev:all": "concurrently \"yarn server:dev\" \"yarn client:dev\"",
     "test": "jest --config jest.config.js",
     "test:watch": "jest --config jest.config.js --watch",
     "test:coverage": "jest --config jest.config.js --coverage",
     "cleanup": "rm -rf build && mkdir build && cd client && rm -rf dist",
     "postbuild": "cp -r client/dist/* build/",
-    "seed": "ts-node prisma/seed.ts",
-    "create:admin": "node --experimental-specifier-resolution=node --loader ts-node/esm server/src/scripts/createAdmin.ts"
+    "seed": "tsx prisma/seed.ts",
+    "create:admin": "tsx server/src/scripts/createAdmin.ts"
   },
   "dependencies": {
     "@prisma/client": "^6.4.1",
@@ -43,7 +43,9 @@
     "zod": "^3.24.2"
   },
   "devDependencies": {
+    "@types/express": "^5.0.0",
     "@types/jest": "^29.5.12",
+    "@types/node": "^22.13.5",
     "@types/supertest": "^6.0.2",
     "concurrently": "^9.1.2",
     "jest": "^29.7.0",
@@ -51,6 +53,7 @@
     "supertest": "^6.3.3",
     "ts-jest": "^29.1.2",
     "ts-node": "^10.9.2",
+    "tsx": "^4.19.3",
     "typescript": "^5.7.3"
   },
   "jest": {
