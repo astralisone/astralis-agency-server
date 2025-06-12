@@ -4,7 +4,7 @@ import dotenv from 'dotenv';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { dirname } from 'path';
-import { Sequelize } from 'sequelize';
+import { PrismaClient } from '@prisma/client';
 import contactRoutes from './routes/contact';
 import healthRoutes from './routes/health';
 import authRoutes from './routes/auth';
@@ -19,24 +19,18 @@ const __dirname = dirname(__filename);
 dotenv.config({ path: path.join(__dirname, '../../.env') });
 
 const app = express();
-const PORT = process.env.PORT || 3001;
+const PORT = process.env.PORT || 4000;
+
+// Initialize Prisma Client
+const prisma = new PrismaClient();
 
 // Verify the DATABASE_URL is loaded
 console.log('Database URL:', process.env.DATABASE_URL);
 
-// Database connection
-const sequelize = new Sequelize(process.env.DATABASE_URL as string, {
-  dialect: 'postgres',
-  ssl: process.env.NODE_ENV === 'production',
-  dialectOptions: {
-    ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false
-  }
-});
-
-// Test database connection
-sequelize.authenticate()
-  .then(() => console.log('Connected to PostgreSQL'))
-  .catch((error) => console.error('PostgreSQL connection error:', error));
+// Test database connection with Prisma
+prisma.$connect()
+  .then(() => console.log('Connected to PostgreSQL via Prisma'))
+  .catch((error) => console.error('Prisma connection error:', error));
 
 // Middleware
 app.use(cors({
@@ -79,11 +73,11 @@ app.use((err: any, req: express.Request, res: express.Response, next: express.Ne
   res.status(500).json({ error: 'Internal server error' });
 });
 
-// Graceful shutdown
+// Graceful shutdown with Prisma
 const shutdown = async () => {
   console.log('Shutting down gracefully...');
   try {
-    await sequelize.close();
+    await prisma.$disconnect();
     console.log('Database connections closed.');
     process.exit(0);
   } catch (err) {
@@ -93,7 +87,7 @@ const shutdown = async () => {
 };
 
 process.on('SIGTERM', shutdown);
-
+process.on('SIGINT', shutdown);
 
 // Start server
 const server = app.listen(PORT, () => {
