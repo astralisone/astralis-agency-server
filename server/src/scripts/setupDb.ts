@@ -5,7 +5,7 @@ import { dirname } from 'path';
 import { Sequelize } from 'sequelize';
 import pkg from 'pg';
 const { Client } = pkg;
-import { Product } from '../models/Product.js';
+import { Product } from '../models/Product';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);

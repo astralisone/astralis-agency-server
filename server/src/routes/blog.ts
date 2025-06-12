@@ -1,18 +1,38 @@
 import express from 'express';
 import { authenticate as authenticateJWT, isAdmin as authorizeAdmin } from '../middleware/auth';
-import { PrismaClient } from '@prisma/client';
+import { PrismaClient, Prisma } from '@prisma/client';
+import { Request } from 'express';
+import { ParsedQs } from 'qs';
+import { formatErrorResponse, ErrorResponse, createNotFoundError, getErrorMessage } from '../utils/error-handler';
+
+interface TypedRequestQuery extends Request {
+  query: {
+    limit?: string;
+    page?: string;
+    search?: string;
+    category?: string;
+    status?: string;
+    sortBy?: string;
+    order?: string;
+  }
+}
+
+interface SuccessResponse<T> {
+  status: 'success';
+  data: T;
+}
 
 const router = express.Router();
 const prisma = new PrismaClient();
 
-// Get all blog posts
-router.get('/', async (req, res) => {
+// Get all blog posts with pagination and filtering
+router.get('/', async (req: TypedRequestQuery, res) => {
   try {
-    const { limit = 10, page = 1, search, category, status, sortBy = 'publishedAt', order = 'desc' } = req.query;
+    const { limit = '10', page = '1', search, category, status, sortBy = 'createdAt', order = 'desc' } = req.query;
     const skip = (Number(page) - 1) * Number(limit);
 
     // Build where clause
-    const where = {};
+    const where: Prisma.PostWhereInput = {};
     
     if (search) {
       where.OR = [
@@ -24,22 +44,30 @@ router.get('/', async (req, res) => {
     if (category) {
       where.category = { slug: category };
     }
-    
+
     if (status) {
-      where.status = status;
+      where.status = status as 'DRAFT' | 'PUBLISHED' | 'ARCHIVED';
     } else {
-      // Default to only published posts for public API
       where.status = 'PUBLISHED';
     }
 
     // Build orderBy
-    const orderBy = {};
-    orderBy[sortBy] = order.toLowerCase();
+    const orderBy: Prisma.PostOrderByWithRelationInput = {
+      [sortBy]: order.toLowerCase() as Prisma.SortOrder
+    };
 
     const [posts, total] = await Promise.all([
       prisma.post.findMany({
         where,
-        include: {
+        select: {
+          id: true,
+          title: true,
+          slug: true,
+          excerpt: true,
+          featuredImage: true,
+          status: true,
+          publishedAt: true,
+          createdAt: true,
           author: {
             select: {
               id: true,
@@ -47,8 +75,20 @@ router.get('/', async (req, res) => {
               avatar: true,
             },
           },
-          category: true,
-          tags: true,
+          category: {
+            select: {
+              id: true,
+              name: true,
+              slug: true,
+            },
+          },
+          tags: {
+            select: {
+              id: true,
+              name: true,
+              slug: true,
+            },
+          },
           _count: {
             select: {
               comments: true,
@@ -63,7 +103,17 @@ router.get('/', async (req, res) => {
       prisma.post.count({ where }),
     ]);
 
-    res.json({
+    const response: SuccessResponse<{
+      posts: typeof posts;
+      pagination: {
+        page: number;
+        limit: number;
+        total: number;
+        totalPages: number;
+        hasNextPage: boolean;
+        hasPrevPage: boolean;
+      };
+    }> = {
       status: 'success',
       data: {
         posts,
@@ -76,13 +126,11 @@ router.get('/', async (req, res) => {
           hasPrevPage: Number(page) > 1,
         },
       },
-    });
-  } catch (error) {
-    console.error('Error fetching blog posts:', error);
-    res.status(500).json({
-      status: 'error',
-      message: 'Failed to fetch blog posts',
-    });
+    };
+
+    res.json(response);
+  } catch (error: unknown) {
+    res.status(500).json(formatErrorResponse(error, 'Failed to fetch posts'));
   }
 });
 
@@ -118,7 +166,43 @@ router.get('/:id', async (req, res) => {
   }
 });
 
-// Blog categories routes
+// Get a single blog post by slug
+router.get('/:slug', async (req, res) => {
+  try {
+    const { slug } = req.params;
+    
+    const post = await prisma.post.findUnique({
+      where: { slug },
+      include: {
+        author: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+            avatar: true,
+          },
+        },
+        category: true,
+        tags: true,
+      },
+    });
+
+    if (!post) {
+      return res.status(404).json({ status: 'error', message: 'Blog post not found' });
+    }
+
+    res.json({ status: 'success', data: post });
+  } catch (error) {
+    console.error('Error fetching post:', error instanceof Error ? error.message : 'Unknown error');
+    res.status(500).json({
+      status: 'error',
+      message: 'Failed to fetch post',
+      details: error instanceof Error ? error.message : 'Unknown error'
+    });
+  }
+});
+
+// Get blog categories
 router.get('/categories', async (req, res) => {
   try {
     const categories = await prisma.category.findMany({
@@ -129,26 +213,28 @@ router.get('/categories', async (req, res) => {
         description: true,
         _count: {
           select: {
-            posts: true
-          }
-        }
-      },
-      orderBy: {
-        name: 'asc',
+            posts: true,
+          },
+        },
       },
     });
-    
-    res.json({
+
+    const formattedCategories = categories.map(category => ({
+      id: category.id,
+      name: category.name,
+      slug: category.slug,
+      description: category.description,
+      postsCount: category._count.posts,
+    }));
+
+    const response: SuccessResponse<typeof formattedCategories> = {
       status: 'success',
-      data: categories
-    });
-  } catch (error) {
-    console.error('Error fetching categories:', error);
-    res.status(500).json({ 
-      status: 'error',
-      message: 'Failed to fetch categories',
-      error: error.message
-    });
+      data: formattedCategories,
+    };
+
+    res.json(response);
+  } catch (error: unknown) {
+    res.status(500).json(formatErrorResponse(error, 'Failed to fetch categories'));
   }
 });
 
@@ -188,12 +274,12 @@ router.post('/categories', authenticateJWT, authorizeAdmin, async (req, res) => 
       status: 'success',
       data: category
     });
-  } catch (error) {
+  } catch (error: unknown) {
     console.error('Error creating category:', error);
     res.status(500).json({ 
       status: 'error',
       message: 'Failed to create category',
-      error: error.message 
+      error: getErrorMessage(error)
     });
   }
 });
@@ -251,12 +337,12 @@ router.put('/categories/:id', authenticateJWT, authorizeAdmin, async (req, res) 
       status: 'success',
       data: updatedCategory
     });
-  } catch (error) {
+  } catch (error: unknown) {
     console.error('Error updating category:', error);
     res.status(500).json({ 
       status: 'error',
       message: 'Failed to update category',
-      error: error.message 
+      error: getErrorMessage(error)
     });
   }
 });
@@ -300,17 +386,17 @@ router.delete('/categories/:id', authenticateJWT, authorizeAdmin, async (req, re
       status: 'success',
       message: 'Category deleted successfully'
     });
-  } catch (error) {
+  } catch (error: unknown) {
     console.error('Error deleting category:', error);
     res.status(500).json({ 
       status: 'error',
       message: 'Failed to delete category',
-      error: error.message 
+      error: getErrorMessage(error)
     });
   }
 });
 
-// Blog tags routes
+// Get blog tags
 router.get('/tags', async (req, res) => {
   try {
     const tags = await prisma.tag.findMany({
@@ -320,29 +406,27 @@ router.get('/tags', async (req, res) => {
         slug: true,
         _count: {
           select: {
-            posts: true
-          }
-        }
-      },
-      orderBy: {
-        name: 'asc',
+            posts: true,
+          },
+        },
       },
     });
-    
-    res.json({
+
+    const formattedTags = tags.map(tag => ({
+      id: tag.id,
+      name: tag.name,
+      slug: tag.slug,
+      postsCount: tag._count.posts,
+    }));
+
+    const response: SuccessResponse<typeof formattedTags> = {
       status: 'success',
-      data: tags.map(tag => ({
-        ...tag,
-        postsCount: tag._count.posts
-      }))
-    });
-  } catch (error) {
-    console.error('Error fetching tags:', error);
-    res.status(500).json({ 
-      status: 'error',
-      message: 'Failed to fetch tags',
-      error: error.message
-    });
+      data: formattedTags,
+    };
+
+    res.json(response);
+  } catch (error: unknown) {
+    res.status(500).json(formatErrorResponse(error, 'Failed to fetch tags'));
   }
 });
 
@@ -381,12 +465,12 @@ router.post('/tags', authenticateJWT, authorizeAdmin, async (req, res) => {
       status: 'success',
       data: tag
     });
-  } catch (error) {
+  } catch (error: unknown) {
     console.error('Error creating tag:', error);
     res.status(500).json({ 
       status: 'error',
       message: 'Failed to create tag',
-      error: error.message 
+      error: getErrorMessage(error)
     });
   }
 });
@@ -443,12 +527,12 @@ router.put('/tags/:id', authenticateJWT, authorizeAdmin, async (req, res) => {
       status: 'success',
       data: updatedTag
     });
-  } catch (error) {
+  } catch (error: unknown) {
     console.error('Error updating tag:', error);
     res.status(500).json({ 
       status: 'error',
       message: 'Failed to update tag',
-      error: error.message 
+      error: getErrorMessage(error)
     });
   }
 });
@@ -496,13 +580,146 @@ router.delete('/tags/:id', authenticateJWT, authorizeAdmin, async (req, res) => 
       status: 'success',
       message: 'Tag deleted successfully'
     });
-  } catch (error) {
+  } catch (error: unknown) {
     console.error('Error deleting tag:', error);
     res.status(500).json({ 
       status: 'error',
       message: 'Failed to delete tag',
-      error: error.message 
+      error: getErrorMessage(error)
     });
+  }
+});
+
+// Create a new blog post
+router.post('/', async (req, res) => {
+  try {
+    const { title, content, featuredImage, categoryId, authorId, tags = [] } = req.body;
+
+    // Generate a slug from the title
+    const slug = title.toLowerCase().replace(/[^a-z0-9]+/g, '-');
+
+    const post = await prisma.post.create({
+      data: {
+        title,
+        slug,
+        content,
+        featuredImage,
+        author: {
+          connect: { id: authorId },
+        },
+        category: {
+          connect: { id: categoryId },
+        },
+        tags: {
+          connect: tags.map((id: string) => ({ id })),
+        },
+      },
+      include: {
+        author: {
+          select: {
+            id: true,
+            name: true,
+            avatar: true,
+          },
+        },
+        category: true,
+        tags: true,
+      },
+    });
+
+    const response: SuccessResponse<typeof post> = {
+      status: 'success',
+      data: post,
+    };
+
+    res.status(201).json(response);
+  } catch (error: unknown) {
+    res.status(500).json(formatErrorResponse(error, 'Failed to create post'));
+  }
+});
+
+// Update a blog post
+router.put('/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { title, content, featuredImage, categoryId, tags = [] } = req.body;
+
+    // Check if post exists
+    const existingPost = await prisma.post.findUnique({
+      where: { id },
+    });
+
+    if (!existingPost) {
+      return res.status(404).json(createNotFoundError('Post', id));
+    }
+
+    // Generate a new slug if title is updated
+    const slug = title ? title.toLowerCase().replace(/[^a-z0-9]+/g, '-') : undefined;
+
+    const updatedPost = await prisma.post.update({
+      where: { id },
+      data: {
+        title,
+        slug,
+        content,
+        featuredImage,
+        category: categoryId ? {
+          connect: { id: categoryId },
+        } : undefined,
+        tags: {
+          set: tags.map((id: string) => ({ id })),
+        },
+      },
+      include: {
+        author: {
+          select: {
+            id: true,
+            name: true,
+            avatar: true,
+          },
+        },
+        category: true,
+        tags: true,
+      },
+    });
+
+    const response: SuccessResponse<typeof updatedPost> = {
+      status: 'success',
+      data: updatedPost,
+    };
+
+    res.json(response);
+  } catch (error: unknown) {
+    res.status(500).json(formatErrorResponse(error, 'Failed to update post'));
+  }
+});
+
+// Delete a blog post
+router.delete('/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    // Check if post exists
+    const existingPost = await prisma.post.findUnique({
+      where: { id },
+    });
+
+    if (!existingPost) {
+      return res.status(404).json(createNotFoundError('Post', id));
+    }
+
+    await prisma.post.delete({
+      where: { id },
+    });
+
+    const response: SuccessResponse<{ message: string }> = {
+      status: 'success',
+      data: { message: 'Post deleted successfully' },
+    };
+
+    res.json(response);
+  } catch (error: unknown) {
+    res.status(500).json(formatErrorResponse(error, 'Failed to delete post'));
   }
 });
 

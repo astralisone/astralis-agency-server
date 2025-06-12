@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useState } from 'react'
-import useEmblaCarousel, { UseEmblaCarouselType } from 'embla-carousel-react'
-import type { EmblaOptionsType } from 'embla-carousel'
+import useEmblaCarousel from 'embla-carousel-react'
+import type { EmblaCarouselType, EmblaOptionsType } from 'embla-carousel'
 import { Button } from '@/components/ui/button'
 import { ChevronLeft, ChevronRight } from 'lucide-react'
 import { cn } from '@/lib/utils'
@@ -25,10 +25,7 @@ export function Carousel({
   showControls = true,
   showDots = true,
 }: CarouselProps) {
-  const [emblaRef, emblaApi] = useEmblaCarousel({
-    loop: true,
-    ...options,
-  })
+  const [emblaRef, emblaApi] = useEmblaCarousel(options)
   const [selectedIndex, setSelectedIndex] = useState(0)
   const [scrollSnaps, setScrollSnaps] = useState<number[]>([])
 
@@ -36,17 +33,16 @@ export function Carousel({
   const scrollNext = useCallback(() => emblaApi && emblaApi.scrollNext(), [emblaApi])
   const scrollTo = useCallback((index: number) => emblaApi && emblaApi.scrollTo(index), [emblaApi])
 
-  const onSelect = useCallback((emblaApi: UseEmblaCarouselType[0]) => {
+  const onSelect = useCallback(() => {
+    if (!emblaApi) return
     setSelectedIndex(emblaApi.selectedScrollSnap())
-  }, [])
+  }, [emblaApi])
 
   useEffect(() => {
     if (!emblaApi) return
-
-    setScrollSnaps(emblaApi.scrollSnapList())
     emblaApi.on('select', onSelect)
-    onSelect(emblaApi)
-
+    onSelect()
+    setScrollSnaps(emblaApi.scrollSnapList())
     return () => {
       emblaApi.off('select', onSelect)
     }

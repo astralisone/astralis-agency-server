@@ -84,7 +84,7 @@ export function BlogTagsPage() {
   console.log('tagsError:', tagsError);
 
   // Extract the tags array from the response with more defensive checks
-  const tags = tagsData && tagsData ? tagsData : [];
+  const tags: Tag[] = Array.isArray(tagsData?.data) ? tagsData.data : [];
   console.log('tags array:', tags);
 
   useEffect(() => {
@@ -137,7 +137,7 @@ export function BlogTagsPage() {
 
   const onSubmit = (data: TagFormValues) => {
     if (isEditing && currentTag) {
-      updateTag({ ...data, id: currentTag.id });
+      updateTag({ ...data, id: currentTag.id } as Tag);
     } else {
       addTag(data);
     }
@@ -307,7 +307,7 @@ export function BlogTagsPage() {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {tags.map((tag) => (
+                    {tags.map((tag: Tag) => (
                       <TableRow key={tag.id}>
                         <TableCell className="font-medium">{tag.name}</TableCell>
                         <TableCell>{tag.slug}</TableCell>

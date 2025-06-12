@@ -5,10 +5,13 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 import { dirname } from 'path';
 import { Sequelize } from 'sequelize';
-import contactRoutes from './routes/contact.js';
-import productRoutes from './routes/products.js';
-import healthRoutes from './routes/health.js';
-import authRoutes from './routes/auth.js';
+import contactRoutes from './routes/contact';
+import healthRoutes from './routes/health';
+import authRoutes from './routes/auth';
+import blogRoutes from './routes/blog';
+import marketplaceRoutes from './routes/marketplace';
+import testimonialsRoutes from './routes/testimonials';
+import adminRoutes from './routes/admin';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -37,7 +40,7 @@ sequelize.authenticate()
 
 // Middleware
 app.use(cors({
-  origin: process.env.CLIENT_URL || 'http://localhost:5173',
+  origin: process.env.CLIENT_URL || 'http://localhost:3000',
   credentials: true
 }));
 app.use(express.json());
@@ -45,9 +48,12 @@ app.use(express.urlencoded({ extended: true }));
 
 // API Routes
 app.use('/api/contact', contactRoutes);
-app.use('/api/products', productRoutes);
 app.use('/api/health', healthRoutes);
 app.use('/api/auth', authRoutes);
+app.use('/api/blog', blogRoutes);
+app.use('/api/marketplace', marketplaceRoutes);
+app.use('/api/testimonials', testimonialsRoutes);
+app.use('/api/admin', adminRoutes);
 
 // Health check endpoint
 app.get('/api/health', (req, res) => {
@@ -87,7 +93,7 @@ const shutdown = async () => {
 };
 
 process.on('SIGTERM', shutdown);
-process.on('SIGINT', shutdown);
+
 
 // Start server
 const server = app.listen(PORT, () => {

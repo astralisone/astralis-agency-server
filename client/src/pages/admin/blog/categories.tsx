@@ -94,7 +94,7 @@ export function BlogCategoriesPage() {
   console.log('error:', error);
 
   // Extract the categories array from the response with defensive checks
-  const categories = categoriesData && categoriesData ? categoriesData : [];
+  const categories: Category[] = Array.isArray(categoriesData?.data) ? categoriesData.data : [];
   console.log('categories array:', categories);
 
   // Setup add mutation
@@ -217,7 +217,7 @@ export function BlogCategoriesPage() {
 
   const confirmDelete = () => {
     if (categoryToDelete?.id) {
-      deleteCategoryMutation({ id: categoryToDelete.id });
+      deleteCategoryMutation({ id: Number(categoryToDelete.id) });
     }
   };
 
@@ -394,7 +394,7 @@ export function BlogCategoriesPage() {
                 </TableCell>
               </TableRow>
             ) : (
-              categories.map((category) => (
+              categories.map((category: Category) => (
                 <TableRow key={category.id}>
                   <TableCell className="font-medium">{category.name}</TableCell>
                   <TableCell>{category.slug}</TableCell>

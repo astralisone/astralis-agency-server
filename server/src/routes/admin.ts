@@ -1,6 +1,19 @@
 import express from 'express';
 import { authenticate as authenticateJWT, isAdmin as authorizeAdmin } from '../middleware/auth';
-import { PrismaClient } from '@prisma/client';
+import { PrismaClient, Prisma } from '@prisma/client';
+import { Request } from 'express';
+import { ParsedQs } from 'qs';
+
+interface TypedRequestQuery extends Request {
+  query: {
+    limit?: string;
+    page?: string;
+    search?: string;
+    role?: string;
+    sortBy?: string;
+    order?: string;
+  }
+}
 
 const router = express.Router();
 const prisma = new PrismaClient();
@@ -13,20 +26,16 @@ router.get('/dashboard', async (req, res) => {
   try {
     const [
       usersCount,
-      productsCount,
-      blogPostsCount,
+      postsCount,
       marketplaceItemsCount,
       testimonialCount,
-      contactMessagesCount,
       recentUsers,
-      recentOrders
+      recentPosts
     ] = await Promise.all([
       prisma.user.count(),
-      prisma.product.count(),
       prisma.post.count(),
       prisma.marketplaceItem.count(),
       prisma.testimonial.count(),
-      prisma.contactMessage.count(),
       prisma.user.findMany({
         take: 5,
         orderBy: { createdAt: 'desc' },
@@ -38,28 +47,19 @@ router.get('/dashboard', async (req, res) => {
           createdAt: true,
         },
       }),
-      prisma.order.findMany({
+      prisma.post.findMany({
         take: 5,
         orderBy: { createdAt: 'desc' },
         include: {
-          user: {
+          author: {
             select: {
               id: true,
               name: true,
               email: true,
             },
           },
-          items: {
-            include: {
-              product: {
-                select: {
-                  id: true,
-                  name: true,
-                  price: true,
-                },
-              },
-            },
-          },
+          category: true,
+          tags: true,
         },
       }),
     ]);
@@ -69,14 +69,12 @@ router.get('/dashboard', async (req, res) => {
       data: {
         counts: {
           users: usersCount,
-          products: productsCount,
-          blogPosts: blogPostsCount,
+          posts: postsCount,
           marketplaceItems: marketplaceItemsCount,
           testimonials: testimonialCount,
-          contactMessages: contactMessagesCount,
         },
         recentUsers,
-        recentOrders,
+        recentPosts,
       },
     });
   } catch (error) {
@@ -89,13 +87,13 @@ router.get('/dashboard', async (req, res) => {
 });
 
 // Get all users (admin only)
-router.get('/users', async (req, res) => {
+router.get('/users', async (req: TypedRequestQuery, res) => {
   try {
-    const { limit = 10, page = 1, search, role, sortBy = 'createdAt', order = 'desc' } = req.query;
+    const { limit = '10', page = '1', search, role, sortBy = 'createdAt', order = 'desc' } = req.query;
     const skip = (Number(page) - 1) * Number(limit);
 
     // Build where clause
-    const where = {};
+    const where: Prisma.UserWhereInput = {};
     
     if (search) {
       where.OR = [
@@ -105,12 +103,13 @@ router.get('/users', async (req, res) => {
     }
     
     if (role) {
-      where.role = role;
+      where.role = role as 'USER' | 'AUTHOR' | 'EDITOR' | 'ADMIN';
     }
 
     // Build orderBy
-    const orderBy = {};
-    orderBy[sortBy] = order.toLowerCase();
+    const orderBy: Prisma.UserOrderByWithRelationInput = {
+      [sortBy]: order.toLowerCase() as Prisma.SortOrder
+    };
 
     const [users, total] = await Promise.all([
       prisma.user.findMany({
@@ -125,8 +124,9 @@ router.get('/users', async (req, res) => {
           updatedAt: true,
           _count: {
             select: {
-              orders: true,
               posts: true,
+              marketplaceItems: true,
+              testimonials: true,
             },
           },
         },
@@ -152,7 +152,7 @@ router.get('/users', async (req, res) => {
       },
     });
   } catch (error) {
-    console.error('Error fetching users:', error);
+    console.error('Error fetching users:', error instanceof Error ? error.message : 'Unknown error');
     res.status(500).json({
       status: 'error',
       message: 'Failed to fetch users',
@@ -177,8 +177,9 @@ router.get('/users/:id', async (req, res) => {
         updatedAt: true,
         _count: {
           select: {
-            orders: true,
             posts: true,
+            marketplaceItems: true,
+            testimonials: true,
           },
         },
       },
@@ -190,7 +191,7 @@ router.get('/users/:id', async (req, res) => {
 
     res.json({ status: 'success', data: user });
   } catch (error) {
-    console.error('Error fetching user:', error);
+    console.error('Error fetching user:', error instanceof Error ? error.message : 'Unknown error');
     res.status(500).json({ status: 'error', message: 'Failed to fetch user' });
   }
 });
@@ -232,7 +233,7 @@ router.put('/users/:id', async (req, res) => {
       data: {
         name: name !== undefined ? name : undefined,
         email: email !== undefined ? email : undefined,
-        role: role !== undefined ? role : undefined,
+        role: role !== undefined ? (role as 'USER' | 'AUTHOR' | 'EDITOR' | 'ADMIN') : undefined,
         avatar: avatar !== undefined ? avatar : undefined,
       },
       select: {
@@ -251,11 +252,11 @@ router.put('/users/:id', async (req, res) => {
       data: updatedUser,
     });
   } catch (error) {
-    console.error('Error updating user:', error);
+    console.error('Error updating user:', error instanceof Error ? error.message : 'Unknown error');
     res.status(500).json({ 
       status: 'error',
       message: 'Failed to update user',
-      error: error.message 
+      error: error instanceof Error ? error.message : 'Unknown error'
     });
   }
 });
@@ -300,136 +301,11 @@ router.delete('/users/:id', async (req, res) => {
       message: 'User deleted successfully'
     });
   } catch (error) {
-    console.error('Error deleting user:', error);
+    console.error('Error deleting user:', error instanceof Error ? error.message : 'Unknown error');
     res.status(500).json({ 
       status: 'error',
       message: 'Failed to delete user',
-      error: error.message 
-    });
-  }
-});
-
-// Get all contact messages (admin only)
-router.get('/contact-messages', async (req, res) => {
-  try {
-    const { limit = 10, page = 1, status, sortBy = 'createdAt', order = 'desc' } = req.query;
-    const skip = (Number(page) - 1) * Number(limit);
-
-    // Build where clause
-    const where = {};
-    
-    if (status) {
-      where.status = status;
-    }
-
-    // Build orderBy
-    const orderBy = {};
-    orderBy[sortBy] = order.toLowerCase();
-
-    const [messages, total] = await Promise.all([
-      prisma.contactMessage.findMany({
-        where,
-        orderBy,
-        skip,
-        take: Number(limit),
-      }),
-      prisma.contactMessage.count({ where }),
-    ]);
-
-    res.json({
-      status: 'success',
-      data: {
-        messages,
-        pagination: {
-          page: Number(page),
-          limit: Number(limit),
-          total,
-          totalPages: Math.ceil(total / Number(limit)),
-          hasNextPage: skip + messages.length < total,
-          hasPrevPage: Number(page) > 1,
-        },
-      },
-    });
-  } catch (error) {
-    console.error('Error fetching contact messages:', error);
-    res.status(500).json({
-      status: 'error',
-      message: 'Failed to fetch contact messages',
-    });
-  }
-});
-
-// Update contact message status (admin only)
-router.put('/contact-messages/:id', async (req, res) => {
-  try {
-    const { id } = req.params;
-    const { status, notes } = req.body;
-
-    // Check if message exists
-    const existingMessage = await prisma.contactMessage.findUnique({
-      where: { id },
-    });
-
-    if (!existingMessage) {
-      return res.status(404).json({ 
-        status: 'error',
-        message: 'Contact message not found' 
-      });
-    }
-
-    const updatedMessage = await prisma.contactMessage.update({
-      where: { id },
-      data: {
-        status: status !== undefined ? status : undefined,
-        notes: notes !== undefined ? notes : undefined,
-      },
-    });
-
-    res.json({
-      status: 'success',
-      data: updatedMessage,
-    });
-  } catch (error) {
-    console.error('Error updating contact message:', error);
-    res.status(500).json({ 
-      status: 'error',
-      message: 'Failed to update contact message',
-      error: error.message 
-    });
-  }
-});
-
-// Delete a contact message (admin only)
-router.delete('/contact-messages/:id', async (req, res) => {
-  try {
-    const { id } = req.params;
-
-    // Check if message exists
-    const existingMessage = await prisma.contactMessage.findUnique({
-      where: { id },
-    });
-
-    if (!existingMessage) {
-      return res.status(404).json({ 
-        status: 'error',
-        message: 'Contact message not found' 
-      });
-    }
-
-    await prisma.contactMessage.delete({
-      where: { id },
-    });
-
-    res.json({ 
-      status: 'success',
-      message: 'Contact message deleted successfully'
-    });
-  } catch (error) {
-    console.error('Error deleting contact message:', error);
-    res.status(500).json({ 
-      status: 'error',
-      message: 'Failed to delete contact message',
-      error: error.message 
+      error: error instanceof Error ? error.message : 'Unknown error'
     });
   }
 });

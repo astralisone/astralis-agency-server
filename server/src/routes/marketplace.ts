@@ -1,32 +1,56 @@
 import express from 'express';
 import { authenticate as authenticateJWT, isAdmin as authorizeAdmin } from '../middleware/auth';
-import { PrismaClient } from '@prisma/client';
+import { PrismaClient, Prisma, ItemStatus } from '@prisma/client';
+import { Request } from 'express';
+import { ParsedQs } from 'qs';
+import { formatErrorResponse, ErrorResponse, createNotFoundError, getErrorMessage } from '../utils/error-handler';
+
+interface TypedRequestQuery extends Request {
+  query: {
+    limit?: string;
+    page?: string;
+    search?: string;
+    category?: string;
+    status?: ItemStatus;
+    minPrice?: string;
+    maxPrice?: string;
+    sortBy?: string;
+    order?: string;
+  }
+}
+
+interface SuccessResponse<T> {
+  status: 'success';
+  data: T;
+}
 
 const router = express.Router();
 const prisma = new PrismaClient();
 
-// Get all marketplace items
-router.get('/', async (req, res) => {
+// Get all marketplace items with pagination and filtering
+router.get('/', async (req: TypedRequestQuery, res) => {
   try {
-    const { 
-      limit = 10, 
-      page = 1, 
-      search, 
-      category, 
-      minPrice, 
-      maxPrice, 
-      sortBy = 'createdAt', 
-      order = 'desc' 
+    const {
+      limit = '10',
+      page = '1',
+      search,
+      category,
+      status,
+      minPrice,
+      maxPrice,
+      sortBy = 'createdAt',
+      order = 'desc'
     } = req.query;
-    
     const skip = (Number(page) - 1) * Number(limit);
 
     // Build where clause
-    const where = {};
+    const where: Prisma.MarketplaceItemWhereInput = {
+      published: true,
+    };
     
     if (search) {
       where.OR = [
-        { name: { contains: search, mode: 'insensitive' } },
+        { title: { contains: search, mode: 'insensitive' } },
         { description: { contains: search, mode: 'insensitive' } },
       ];
     }
@@ -34,31 +58,63 @@ router.get('/', async (req, res) => {
     if (category) {
       where.category = { slug: category };
     }
-    
-    if (minPrice) {
-      where.price = {
-        ...where.price,
-        gte: Number(minPrice),
-      };
+
+    if (status) {
+      where.status = status;
     }
-    
-    if (maxPrice) {
-      where.price = {
-        ...where.price,
-        lte: Number(maxPrice),
-      };
+
+    // Handle price filtering
+    if (minPrice || maxPrice) {
+      where.price = {};
+      if (minPrice) where.price.gte = new Prisma.Decimal(minPrice);
+      if (maxPrice) where.price.lte = new Prisma.Decimal(maxPrice);
     }
 
     // Build orderBy
-    const orderBy = {};
-    orderBy[sortBy] = order.toLowerCase();
+    const orderBy: Prisma.MarketplaceItemOrderByWithRelationInput = {
+      [sortBy]: order.toLowerCase() as Prisma.SortOrder
+    };
 
     const [items, total] = await Promise.all([
       prisma.marketplaceItem.findMany({
         where,
-        include: {
-          category: true,
-          tags: true,
+        select: {
+          id: true,
+          title: true,
+          slug: true,
+          description: true,
+          price: true,
+          imageUrl: true,
+          status: true,
+          specifications: true,
+          features: true,
+          stock: true,
+          discountPrice: true,
+          weight: true,
+          dimensions: true,
+          featured: true,
+          createdAt: true,
+          seller: {
+            select: {
+              id: true,
+              name: true,
+              avatar: true,
+            },
+          },
+          category: {
+            select: {
+              id: true,
+              name: true,
+              slug: true,
+            },
+          },
+          tags: {
+            select: {
+              id: true,
+              name: true,
+              slug: true,
+            },
+          },
         },
         orderBy,
         skip,
@@ -67,7 +123,17 @@ router.get('/', async (req, res) => {
       prisma.marketplaceItem.count({ where }),
     ]);
 
-    res.json({
+    const response: SuccessResponse<{
+      items: typeof items;
+      pagination: {
+        page: number;
+        limit: number;
+        total: number;
+        totalPages: number;
+        hasNextPage: boolean;
+        hasPrevPage: boolean;
+      };
+    }> = {
       status: 'success',
       data: {
         items,
@@ -80,13 +146,11 @@ router.get('/', async (req, res) => {
           hasPrevPage: Number(page) > 1,
         },
       },
-    });
-  } catch (error) {
-    console.error('Error fetching marketplace items:', error);
-    res.status(500).json({
-      status: 'error',
-      message: 'Failed to fetch marketplace items',
-    });
+    };
+
+    res.json(response);
+  } catch (error: unknown) {
+    res.status(500).json(formatErrorResponse(error, 'Failed to fetch marketplace items'));
   }
 });
 
@@ -114,178 +178,157 @@ router.get('/:id', async (req, res) => {
   }
 });
 
-// Create a new marketplace item (admin only)
-router.post('/', authenticateJWT, authorizeAdmin, async (req, res) => {
+// Create a new marketplace item
+router.post('/', async (req, res) => {
   try {
-    const { 
-      name, 
-      description, 
-      price, 
-      salePrice, 
-      imageUrl, 
-      categoryId, 
-      tagIds = [], 
-      status = 'ACTIVE',
-      features = []
+    const {
+      title,
+      description,
+      price,
+      imageUrl,
+      categoryId,
+      sellerId,
+      specifications,
+      features,
+      stock,
+      discountPrice,
+      weight,
+      dimensions,
+      featured,
+      tags = [],
     } = req.body;
 
-    // Validate required fields
-    if (!name || !description || price === undefined || !imageUrl || !categoryId) {
-      return res.status(400).json({ 
-        status: 'error',
-        message: 'Name, description, price, imageUrl, and categoryId are required' 
-      });
-    }
+    // Generate a slug from the title
+    const slug = title.toLowerCase().replace(/[^a-z0-9]+/g, '-');
 
-    // Check if category exists
-    const categoryExists = await prisma.marketplaceCategory.findUnique({
-      where: { id: categoryId },
-    });
-
-    if (!categoryExists) {
-      return res.status(400).json({ 
-        status: 'error',
-        message: 'Category not found' 
-      });
-    }
-
-    // Create the marketplace item
     const item = await prisma.marketplaceItem.create({
       data: {
-        name,
+        title,
+        slug,
         description,
-        price: Number(price),
-        salePrice: salePrice ? Number(salePrice) : null,
+        price: new Prisma.Decimal(price),
         imageUrl,
-        status,
-        features,
+        seller: {
+          connect: { id: sellerId },
+        },
         category: {
           connect: { id: categoryId },
         },
-        tags: tagIds.length > 0 ? {
-          connect: tagIds.map(id => ({ id })),
-        } : undefined,
+        specifications,
+        features,
+        stock,
+        discountPrice: discountPrice ? new Prisma.Decimal(discountPrice) : null,
+        weight: weight ? new Prisma.Decimal(weight) : null,
+        dimensions,
+        featured,
+        tags: {
+          connect: tags.map((id: string) => ({ id })),
+        },
       },
       include: {
+        seller: {
+          select: {
+            id: true,
+            name: true,
+            avatar: true,
+          },
+        },
         category: true,
         tags: true,
       },
     });
 
-    res.status(201).json({
+    const response: SuccessResponse<typeof item> = {
       status: 'success',
       data: item,
-    });
-  } catch (error) {
-    console.error('Error creating marketplace item:', error);
-    res.status(500).json({ 
-      status: 'error',
-      message: 'Failed to create marketplace item',
-      error: error.message 
-    });
+    };
+
+    res.status(201).json(response);
+  } catch (error: unknown) {
+    res.status(500).json(formatErrorResponse(error, 'Failed to create marketplace item'));
   }
 });
 
-// Update a marketplace item (admin only)
-router.put('/:id', authenticateJWT, authorizeAdmin, async (req, res) => {
+// Update a marketplace item
+router.put('/:id', async (req, res) => {
   try {
     const { id } = req.params;
-    const { 
-      name, 
-      description, 
-      price, 
-      salePrice, 
-      imageUrl, 
-      categoryId, 
-      tagIds, 
-      status,
-      features
+    const {
+      title,
+      description,
+      price,
+      imageUrl,
+      categoryId,
+      specifications,
+      features,
+      stock,
+      discountPrice,
+      weight,
+      dimensions,
+      featured,
+      tags = [],
     } = req.body;
 
     // Check if item exists
     const existingItem = await prisma.marketplaceItem.findUnique({
       where: { id },
-      include: {
-        tags: true,
-      },
     });
 
     if (!existingItem) {
-      return res.status(404).json({ 
-        status: 'error',
-        message: 'Marketplace item not found' 
-      });
+      return res.status(404).json(createNotFoundError('Marketplace item', id));
     }
 
-    // Check if category exists if provided
-    if (categoryId) {
-      const categoryExists = await prisma.marketplaceCategory.findUnique({
-        where: { id: categoryId },
-      });
+    // Generate a new slug if title is updated
+    const slug = title ? title.toLowerCase().replace(/[^a-z0-9]+/g, '-') : undefined;
 
-      if (!categoryExists) {
-        return res.status(400).json({ 
-          status: 'error',
-          message: 'Category not found' 
-        });
-      }
-    }
-
-    // Prepare update data
-    const updateData = {
-      name: name !== undefined ? name : undefined,
-      description: description !== undefined ? description : undefined,
-      price: price !== undefined ? Number(price) : undefined,
-      salePrice: salePrice !== undefined ? (salePrice ? Number(salePrice) : null) : undefined,
-      imageUrl: imageUrl !== undefined ? imageUrl : undefined,
-      status: status !== undefined ? status : undefined,
-      features: features !== undefined ? features : undefined,
-      category: categoryId ? {
-        connect: { id: categoryId },
-      } : undefined,
-    };
-
-    // Handle tags update if provided
-    let tagsUpdate = {};
-    if (tagIds !== undefined) {
-      // Disconnect all existing tags
-      tagsUpdate.disconnect = existingItem.tags.map(tag => ({ id: tag.id }));
-      
-      // Connect new tags if any
-      if (tagIds.length > 0) {
-        tagsUpdate.connect = tagIds.map(id => ({ id }));
-      }
-    }
-
-    // Update the marketplace item
     const updatedItem = await prisma.marketplaceItem.update({
       where: { id },
       data: {
-        ...updateData,
-        tags: Object.keys(tagsUpdate).length > 0 ? tagsUpdate : undefined,
+        title,
+        slug,
+        description,
+        price: price ? new Prisma.Decimal(price) : undefined,
+        imageUrl,
+        category: categoryId ? {
+          connect: { id: categoryId },
+        } : undefined,
+        specifications,
+        features,
+        stock,
+        discountPrice: discountPrice ? new Prisma.Decimal(discountPrice) : undefined,
+        weight: weight ? new Prisma.Decimal(weight) : undefined,
+        dimensions,
+        featured,
+        tags: {
+          set: tags.map((id: string) => ({ id })),
+        },
       },
       include: {
+        seller: {
+          select: {
+            id: true,
+            name: true,
+            avatar: true,
+          },
+        },
         category: true,
         tags: true,
       },
     });
 
-    res.json({
+    const response: SuccessResponse<typeof updatedItem> = {
       status: 'success',
       data: updatedItem,
-    });
-  } catch (error) {
-    console.error('Error updating marketplace item:', error);
-    res.status(500).json({ 
-      status: 'error',
-      message: 'Failed to update marketplace item',
-      error: error.message 
-    });
+    };
+
+    res.json(response);
+  } catch (error: unknown) {
+    res.status(500).json(formatErrorResponse(error, 'Failed to update marketplace item'));
   }
 });
 
-// Delete a marketplace item (admin only)
-router.delete('/:id', authenticateJWT, authorizeAdmin, async (req, res) => {
+// Delete a marketplace item
+router.delete('/:id', async (req, res) => {
   try {
     const { id } = req.params;
 
@@ -295,35 +338,28 @@ router.delete('/:id', authenticateJWT, authorizeAdmin, async (req, res) => {
     });
 
     if (!existingItem) {
-      return res.status(404).json({ 
-        status: 'error',
-        message: 'Marketplace item not found' 
-      });
+      return res.status(404).json(createNotFoundError('Marketplace item', id));
     }
 
-    // Delete the marketplace item
     await prisma.marketplaceItem.delete({
       where: { id },
     });
 
-    res.json({ 
+    const response: SuccessResponse<{ message: string }> = {
       status: 'success',
-      message: 'Marketplace item deleted successfully'
-    });
-  } catch (error) {
-    console.error('Error deleting marketplace item:', error);
-    res.status(500).json({ 
-      status: 'error',
-      message: 'Failed to delete marketplace item',
-      error: error.message 
-    });
+      data: { message: 'Marketplace item deleted successfully' },
+    };
+
+    res.json(response);
+  } catch (error: unknown) {
+    res.status(500).json(formatErrorResponse(error, 'Failed to delete marketplace item'));
   }
 });
 
-// Marketplace categories routes
+// Get marketplace categories
 router.get('/categories', async (req, res) => {
   try {
-    const categories = await prisma.marketplaceCategory.findMany({
+    const categories = await prisma.category.findMany({
       select: {
         id: true,
         name: true,
@@ -331,26 +367,28 @@ router.get('/categories', async (req, res) => {
         description: true,
         _count: {
           select: {
-            items: true
-          }
-        }
-      },
-      orderBy: {
-        name: 'asc',
+            marketplaceItems: true,
+          },
+        },
       },
     });
-    
-    res.json({
+
+    const formattedCategories = categories.map(category => ({
+      id: category.id,
+      name: category.name,
+      slug: category.slug,
+      description: category.description,
+      itemsCount: category._count.marketplaceItems,
+    }));
+
+    const response: SuccessResponse<typeof formattedCategories> = {
       status: 'success',
-      data: categories
-    });
-  } catch (error) {
-    console.error('Error fetching marketplace categories:', error);
-    res.status(500).json({ 
-      status: 'error',
-      message: 'Failed to fetch marketplace categories',
-      error: error.message
-    });
+      data: formattedCategories,
+    };
+
+    res.json(response);
+  } catch (error: unknown) {
+    res.status(500).json(formatErrorResponse(error, 'Failed to fetch marketplace categories'));
   }
 });
 
@@ -367,7 +405,7 @@ router.post('/categories', authenticateJWT, authorizeAdmin, async (req, res) => 
     }
 
     // Check if slug already exists
-    const existingCategory = await prisma.marketplaceCategory.findUnique({
+    const existingCategory = await prisma.category.findUnique({
       where: { slug },
     });
 
@@ -378,7 +416,7 @@ router.post('/categories', authenticateJWT, authorizeAdmin, async (req, res) => 
       });
     }
 
-    const category = await prisma.marketplaceCategory.create({
+    const category = await prisma.category.create({
       data: {
         name,
         slug,
@@ -390,12 +428,12 @@ router.post('/categories', authenticateJWT, authorizeAdmin, async (req, res) => 
       status: 'success',
       data: category
     });
-  } catch (error) {
+  } catch (error: unknown) {
     console.error('Error creating marketplace category:', error);
     res.status(500).json({ 
       status: 'error',
       message: 'Failed to create marketplace category',
-      error: error.message 
+      error: getErrorMessage(error)
     });
   }
 });
@@ -414,7 +452,7 @@ router.put('/categories/:id', authenticateJWT, authorizeAdmin, async (req, res) 
     }
 
     // Check if category exists
-    const existingCategory = await prisma.marketplaceCategory.findUnique({
+    const existingCategory = await prisma.category.findUnique({
       where: { id },
     });
 
@@ -426,7 +464,7 @@ router.put('/categories/:id', authenticateJWT, authorizeAdmin, async (req, res) 
     }
 
     // Check if slug already exists (excluding current category)
-    const slugExists = await prisma.marketplaceCategory.findFirst({
+    const slugExists = await prisma.category.findFirst({
       where: {
         slug,
         id: { not: id },
@@ -440,7 +478,7 @@ router.put('/categories/:id', authenticateJWT, authorizeAdmin, async (req, res) 
       });
     }
 
-    const updatedCategory = await prisma.marketplaceCategory.update({
+    const updatedCategory = await prisma.category.update({
       where: { id },
       data: {
         name,
@@ -453,12 +491,12 @@ router.put('/categories/:id', authenticateJWT, authorizeAdmin, async (req, res) 
       status: 'success',
       data: updatedCategory
     });
-  } catch (error) {
+  } catch (error: unknown) {
     console.error('Error updating marketplace category:', error);
     res.status(500).json({ 
       status: 'error',
       message: 'Failed to update marketplace category',
-      error: error.message 
+      error: getErrorMessage(error)
     });
   }
 });
@@ -468,7 +506,7 @@ router.delete('/categories/:id', authenticateJWT, authorizeAdmin, async (req, re
     const { id } = req.params;
 
     // Check if category exists
-    const existingCategory = await prisma.marketplaceCategory.findUnique({
+    const existingCategory = await prisma.category.findUnique({
       where: { id },
     });
 
@@ -494,7 +532,7 @@ router.delete('/categories/:id', authenticateJWT, authorizeAdmin, async (req, re
       });
     }
 
-    await prisma.marketplaceCategory.delete({
+    await prisma.category.delete({
       where: { id },
     });
 
@@ -502,49 +540,47 @@ router.delete('/categories/:id', authenticateJWT, authorizeAdmin, async (req, re
       status: 'success',
       message: 'Category deleted successfully'
     });
-  } catch (error) {
+  } catch (error: unknown) {
     console.error('Error deleting marketplace category:', error);
     res.status(500).json({ 
       status: 'error',
       message: 'Failed to delete marketplace category',
-      error: error.message 
+      error: getErrorMessage(error)
     });
   }
 });
 
-// Marketplace tags routes
+// Get marketplace tags
 router.get('/tags', async (req, res) => {
   try {
-    const tags = await prisma.marketplaceTag.findMany({
+    const tags = await prisma.tag.findMany({
       select: {
         id: true,
         name: true,
         slug: true,
         _count: {
           select: {
-            items: true
-          }
-        }
-      },
-      orderBy: {
-        name: 'asc',
+            marketplaceItems: true,
+          },
+        },
       },
     });
-    
-    res.json({
+
+    const formattedTags = tags.map(tag => ({
+      id: tag.id,
+      name: tag.name,
+      slug: tag.slug,
+      itemsCount: tag._count.marketplaceItems,
+    }));
+
+    const response: SuccessResponse<typeof formattedTags> = {
       status: 'success',
-      data: tags.map(tag => ({
-        ...tag,
-        itemsCount: tag._count.items
-      }))
-    });
-  } catch (error) {
-    console.error('Error fetching marketplace tags:', error);
-    res.status(500).json({ 
-      status: 'error',
-      message: 'Failed to fetch marketplace tags',
-      error: error.message
-    });
+      data: formattedTags,
+    };
+
+    res.json(response);
+  } catch (error: unknown) {
+    res.status(500).json(formatErrorResponse(error, 'Failed to fetch marketplace tags'));
   }
 });
 
@@ -561,7 +597,7 @@ router.post('/tags', authenticateJWT, authorizeAdmin, async (req, res) => {
     }
 
     // Check if slug already exists
-    const existingTag = await prisma.marketplaceTag.findUnique({
+    const existingTag = await prisma.tag.findUnique({
       where: { slug },
     });
 
@@ -572,7 +608,7 @@ router.post('/tags', authenticateJWT, authorizeAdmin, async (req, res) => {
       });
     }
 
-    const tag = await prisma.marketplaceTag.create({
+    const tag = await prisma.tag.create({
       data: {
         name,
         slug,
@@ -583,12 +619,12 @@ router.post('/tags', authenticateJWT, authorizeAdmin, async (req, res) => {
       status: 'success',
       data: tag
     });
-  } catch (error) {
+  } catch (error: unknown) {
     console.error('Error creating marketplace tag:', error);
     res.status(500).json({ 
       status: 'error',
       message: 'Failed to create marketplace tag',
-      error: error.message 
+      error: getErrorMessage(error)
     });
   }
 });
@@ -607,7 +643,7 @@ router.put('/tags/:id', authenticateJWT, authorizeAdmin, async (req, res) => {
     }
 
     // Check if tag exists
-    const existingTag = await prisma.marketplaceTag.findUnique({
+    const existingTag = await prisma.tag.findUnique({
       where: { id },
     });
 
@@ -619,7 +655,7 @@ router.put('/tags/:id', authenticateJWT, authorizeAdmin, async (req, res) => {
     }
 
     // Check if slug already exists (excluding current tag)
-    const slugExists = await prisma.marketplaceTag.findFirst({
+    const slugExists = await prisma.tag.findFirst({
       where: {
         slug,
         id: { not: id },
@@ -633,7 +669,7 @@ router.put('/tags/:id', authenticateJWT, authorizeAdmin, async (req, res) => {
       });
     }
 
-    const updatedTag = await prisma.marketplaceTag.update({
+    const updatedTag = await prisma.tag.update({
       where: { id },
       data: {
         name,
@@ -645,12 +681,12 @@ router.put('/tags/:id', authenticateJWT, authorizeAdmin, async (req, res) => {
       status: 'success',
       data: updatedTag
     });
-  } catch (error) {
+  } catch (error: unknown) {
     console.error('Error updating marketplace tag:', error);
     res.status(500).json({ 
       status: 'error',
       message: 'Failed to update marketplace tag',
-      error: error.message 
+      error: getErrorMessage(error)
     });
   }
 });
@@ -660,7 +696,7 @@ router.delete('/tags/:id', authenticateJWT, authorizeAdmin, async (req, res) => 
     const { id } = req.params;
 
     // Check if tag exists
-    const existingTag = await prisma.marketplaceTag.findUnique({
+    const existingTag = await prisma.tag.findUnique({
       where: { id },
     });
 
@@ -690,7 +726,7 @@ router.delete('/tags/:id', authenticateJWT, authorizeAdmin, async (req, res) => 
       });
     }
 
-    await prisma.marketplaceTag.delete({
+    await prisma.tag.delete({
       where: { id },
     });
 
@@ -698,12 +734,12 @@ router.delete('/tags/:id', authenticateJWT, authorizeAdmin, async (req, res) => 
       status: 'success',
       message: 'Tag deleted successfully'
     });
-  } catch (error) {
+  } catch (error: unknown) {
     console.error('Error deleting marketplace tag:', error);
     res.status(500).json({ 
       status: 'error',
       message: 'Failed to delete marketplace tag',
-      error: error.message 
+      error: getErrorMessage(error)
     });
   }
 });

@@ -2,8 +2,8 @@ import dotenv from 'dotenv';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { dirname } from 'path';
-import { sequelize } from '../config/database.js';
-import User from '../models/User.js';
+import { sequelize } from '../config/database';
+import User from '../models/User';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);

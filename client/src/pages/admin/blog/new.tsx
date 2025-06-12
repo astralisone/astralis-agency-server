@@ -353,7 +353,7 @@ export function NewBlogPostPage() {
                     <Label>Image Preview</Label>
                     <div className="mt-2 border rounded-md overflow-hidden w-full max-w-md">
                       <img
-                        src={form.getValues("featuredImage")}
+                        src={form.getValues("featuredImage") ?? undefined}
                         alt="Preview"
                         className="w-full h-auto object-cover"
                         onError={(e) => {
