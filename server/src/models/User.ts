@@ -1,86 +1,71 @@
-import { DataTypes, Model, Optional } from 'sequelize';
-import { sequelize } from '../config/database';
+import { User as PrismaUser, UserRole } from '@prisma/client';
 import bcrypt from 'bcrypt';
+import prisma from '../lib/prisma';
 
-// User attributes interface
+// User model interface
 export interface UserAttributes {
   id: string;
   email: string;
-  name: string;
+  name: string | null;
   password: string;
-  role: 'USER' | 'ADMIN';
+  role: UserRole;
+  avatar?: string | null;
+  bio?: string | null;
   createdAt?: Date;
   updatedAt?: Date;
 }
 
-// Interface for User creation attributes
-export interface UserCreationAttributes extends Optional<UserAttributes, 'id' | 'createdAt' | 'updatedAt'> {}
+// User model class with static methods
+export class User {
+  // Find a user by email
+  static async findOne({ where }: { where: { email?: string; id?: string } }) {
+    if (where.email) {
+      return prisma.user.findUnique({
+        where: { email: where.email }
+      });
+    } else if (where.id) {
+      return prisma.user.findUnique({
+        where: { id: where.id }
+      });
+    }
+    return null;
+  }
 
-// User model class
-class User extends Model<UserAttributes, UserCreationAttributes> implements UserAttributes {
-  public id!: string;
-  public email!: string;
-  public name!: string;
-  public password!: string;
-  public role!: 'USER' | 'ADMIN';
-  public readonly createdAt!: Date;
-  public readonly updatedAt!: Date;
+  // Find a user by ID
+  static async findByPk(id: string) {
+    return prisma.user.findUnique({
+      where: { id },
+    });
+  }
 
-  // Method to validate password
-  public async validatePassword(password: string): Promise<boolean> {
-    return bcrypt.compare(password, this.password);
+  // Create a new user
+  static async create(data: {
+    email: string;
+    name?: string;
+    password: string;
+    role?: UserRole;
+    avatar?: string;
+    bio?: string;
+  }) {
+    const salt = await bcrypt.genSalt(10);
+    const hashedPassword = await bcrypt.hash(data.password, salt);
+
+    return prisma.user.create({
+      data: {
+        email: data.email,
+        name: data.name || null,
+        password: hashedPassword,
+        role: data.role || 'USER',
+        avatar: data.avatar || null,
+        bio: data.bio || null,
+      },
+    });
+  }
+
+  // Validate password
+  static async validatePassword(user: PrismaUser, password: string): Promise<boolean> {
+    return bcrypt.compare(password, user.password);
   }
 }
 
-// Initialize User model
-User.init(
-  {
-    id: {
-      type: DataTypes.UUID,
-      defaultValue: DataTypes.UUIDV4,
-      primaryKey: true,
-    },
-    email: {
-      type: DataTypes.STRING,
-      allowNull: false,
-      unique: true,
-      validate: {
-        isEmail: true,
-      },
-    },
-    name: {
-      type: DataTypes.STRING,
-      allowNull: false,
-    },
-    password: {
-      type: DataTypes.STRING,
-      allowNull: false,
-    },
-    role: {
-      type: DataTypes.ENUM('USER', 'ADMIN'),
-      allowNull: false,
-      defaultValue: 'USER',
-    },
-  },
-  {
-    sequelize,
-    modelName: 'User',
-    tableName: 'users',
-    hooks: {
-      beforeCreate: async (user: User) => {
-        if (user.password) {
-          const salt = await bcrypt.genSalt(10);
-          user.password = await bcrypt.hash(user.password, salt);
-        }
-      },
-      beforeUpdate: async (user: User) => {
-        if (user.changed('password')) {
-          const salt = await bcrypt.genSalt(10);
-          user.password = await bcrypt.hash(user.password, salt);
-        }
-      },
-    },
-  }
-);
-
-export default User; 
+export default User;

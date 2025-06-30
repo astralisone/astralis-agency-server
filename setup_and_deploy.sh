@@ -112,100 +112,13 @@ print_success "Build completed successfully"
 # Deploy to server
 print_status "Deploying to remote server..."
 
-# Create deployment package
-tar -czf astralis-deployment.tar.gz \
-    build/ \
-    server/dist/ \
-    server/package.json \
-    package.json \
-    schema.prisma \
-    prisma/ \
-    migrations/ \
-    --exclude=node_modules \
-    --exclude=.git \
-    --exclude=client/node_modules \
-    --exclude=server/node_modules
-
-# Upload to server
-print_status "Uploading deployment package..."
-rsync -avz --progress astralis-deployment.tar.gz $REMOTE_USER@$REMOTE_HOST:$REMOTE_PATH/
-
-# Execute remote deployment commands
-print_status "Executing remote deployment..."
-ssh $REMOTE_USER@$REMOTE_HOST << EOF
-    set -e
-    cd $REMOTE_PATH
-    
-    # Extract deployment package
-    echo "Extracting deployment package..."
-    tar -xzf astralis-deployment.tar.gz
-    
-    # Install production dependencies
-    echo "Installing production dependencies..."
-    yarn install --production --frozen-lockfile
     cd server && yarn install --production --frozen-lockfile && cd ..
-    
+
     # Generate Prisma client and run migrations
     echo "Setting up database..."
     npx prisma generate
     npx prisma migrate deploy
     
-    # Create production environment file
-    echo "Creating production environment file..."
-    cat > .env << 'EOL'
-# Production Environment Configuration for Astralis Agency Server
-
-# Application Environment
-NODE_ENV=production
-PORT=$SERVER_PORT
-
-# Database Configuration
-DATABASE_URL=postgresql://$DB_USER:CHANGE_THIS_PASSWORD@$DB_HOST:$DB_PORT/$DB_NAME?schema=public
-
-# Alternative database configuration
-DB_HOST=$DB_HOST
-DB_PORT=$DB_PORT
-DB_NAME=$DB_NAME
-DB_USER=$DB_USER
-DB_PASSWORD=CHANGE_THIS_PASSWORD
-
-# Client Configuration
-CLIENT_URL=https://$DOMAIN_PRIMARY,https://$DOMAIN_SECONDARY
-CORS_ORIGIN=https://$DOMAIN_PRIMARY,https://$DOMAIN_SECONDARY
-
-# Security (CHANGE THESE IN PRODUCTION)
-JWT_SECRET=CHANGE_THIS_TO_SECURE_32_CHAR_SECRET
-BCRYPT_ROUNDS=12
-
-# API Configuration
-API_BASE_URL=https://$DOMAIN_PRIMARY/api
-
-# Email Configuration (configure as needed)
-SMTP_HOST=your_smtp_host
-SMTP_PORT=587
-SMTP_USER=your_smtp_user
-SMTP_PASS=your_smtp_password
-FROM_EMAIL=noreply@$DOMAIN_PRIMARY
-
-# File Upload Configuration
-MAX_FILE_SIZE=10485760
-UPLOAD_PATH=$REMOTE_PATH/uploads
-
-# Logging
-LOG_LEVEL=info
-LOG_FILE=$REMOTE_PATH/logs/app.log
-
-# Rate Limiting
-RATE_LIMIT_WINDOW_MS=900000
-RATE_LIMIT_MAX_REQUESTS=100
-
-# Session Configuration
-SESSION_SECRET=CHANGE_THIS_TO_SECURE_32_CHAR_SECRET
-SESSION_COOKIE_SECURE=true
-SESSION_COOKIE_HTTPONLY=true
-SESSION_COOKIE_MAX_AGE=86400000
-EOL
-
     # Create PM2 ecosystem file
     echo "Creating PM2 configuration..."
     cat > ecosystem.config.js << 'EOL'
@@ -316,9 +229,6 @@ EOL
     echo "Reloading Caddy..."
     sudo caddy reload --config Caddyfile || echo "Caddy reload failed - you may need to start it manually"
     
-    # Clean up deployment package
-    rm -f astralis-deployment.tar.gz
-    
     echo ""
     echo "==================================="
     echo "Deployment completed successfully!"
@@ -342,13 +252,10 @@ EOL
     pm2 status
     echo ""
     echo "Next steps:"
-    echo "1. Update the .env file with secure values"
     echo "2. Restart the application: pm2 restart astralis-server"
     echo "3. Test the application endpoints"
 EOF
 
-# Clean up local deployment package
-rm -f astralis-deployment.tar.gz
 
 print_success "Deployment script completed!"
 print_status ""

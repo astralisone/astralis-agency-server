@@ -8,6 +8,7 @@ export const productController = {
       const product = await Product.create(req.body);
       return res.status(201).json(product);
     } catch (error) {
+      console.error('Create product error:', error);
       return res.status(500).json({ error: 'Failed to create product' });
     }
   },
@@ -18,6 +19,7 @@ export const productController = {
       const products = await Product.findAll();
       return res.json(products);
     } catch (error) {
+      console.error('Get all products error:', error);
       return res.status(500).json({ error: 'Failed to fetch products' });
     }
   },
@@ -31,6 +33,7 @@ export const productController = {
       }
       return res.json(product);
     } catch (error) {
+      console.error('Get product by ID error:', error);
       return res.status(500).json({ error: 'Failed to fetch product' });
     }
   },
@@ -42,9 +45,10 @@ export const productController = {
       if (!product) {
         return res.status(404).json({ error: 'Product not found' });
       }
-      await product.update(req.body);
-      return res.json(product);
+      const updatedProduct = await Product.update(req.params.id, req.body);
+      return res.json(updatedProduct);
     } catch (error) {
+      console.error('Update product error:', error);
       return res.status(500).json({ error: 'Failed to update product' });
     }
   },
@@ -56,10 +60,11 @@ export const productController = {
       if (!product) {
         return res.status(404).json({ error: 'Product not found' });
       }
-      await product.destroy();
+      await Product.destroy({ where: { id: req.params.id } });
       return res.status(204).send();
     } catch (error) {
+      console.error('Delete product error:', error);
       return res.status(500).json({ error: 'Failed to delete product' });
     }
   }
-}; 
+};

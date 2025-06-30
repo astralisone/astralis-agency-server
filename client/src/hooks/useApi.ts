@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 
-// Define the API base URL with port 4000
-const API_BASE_URL = 'http://localhost:4000';
+// Define the API base URL - empty string for relative URLs
+const API_BASE_URL = '';
 
 interface ApiResponse<T> {
   status: 'success' | 'error';

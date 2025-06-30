@@ -6,7 +6,7 @@ interface Config {
 }
 
 const config: Config = {
-  apiUrl: import.meta.env.VITE_API_URL || 'http://localhost:4000',
+  apiUrl: import.meta.env.VITE_API_URL || '',
 };
 
 export default config; 

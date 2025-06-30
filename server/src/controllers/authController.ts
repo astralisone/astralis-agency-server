@@ -53,7 +53,7 @@ export const login = async (req: Request, res: Response) => {
     }
 
     // Validate password
-    const isPasswordValid = await user.validatePassword(password);
+    const isPasswordValid = await User.validatePassword(user, password);
     if (!isPasswordValid) {
       return res.status(401).json({ message: 'Invalid credentials' });
     }
@@ -138,4 +138,4 @@ export const createAdmin = async (req: Request, res: Response) => {
     console.error('Create admin error:', error);
     res.status(500).json({ message: 'Server error' });
   }
-}; 
+};

@@ -2,7 +2,7 @@ import dotenv from 'dotenv';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { dirname } from 'path';
-import { sequelize } from '../config/database';
+import prisma from '../lib/prisma';
 import User from '../models/User';
 
 const __filename = fileURLToPath(import.meta.url);
@@ -13,10 +13,6 @@ dotenv.config({ path: path.join(__dirname, '../../../.env') });
 
 async function createAdminUser() {
   try {
-    // Connect to database
-    await sequelize.authenticate();
-    console.log('Connected to database');
-
     // Check if admin user already exists
     const existingAdmin = await User.findOne({
       where: {
@@ -33,7 +29,7 @@ async function createAdminUser() {
     const adminUser = await User.create({
       name: 'Admin User',
       email: 'admin@astralis.one',
-      password: '45tr4l15', // This will be hashed by the User model hooks
+      password: '45tr4l15', // This will be hashed by the User model
       role: 'ADMIN',
     });
 
@@ -52,10 +48,10 @@ async function createAdminUser() {
   } catch (error) {
     console.error('Error creating admin user:', error);
   } finally {
-    // Close database connection
-    await sequelize.close();
+    // Close Prisma client
+    await prisma.$disconnect();
   }
 }
 
 // Run the function
-createAdminUser(); 
+createAdminUser();

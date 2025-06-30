@@ -160,7 +160,101 @@ Protected routes are implemented using the `ProtectedRoute` component, which:
 - `/api/contact` - Contact form endpoints
 - `/api/health` - Health check endpoint
 
+## Production Deployment
+
+### Server Configuration
+The production server is deployed using:
+- **Web Server**: Caddy v2 with automatic HTTPS
+- **Process Manager**: Backend runs directly via yarn/tsx
+- **Database**: PostgreSQL with production schema
+- **Domains**: astralisone.com and astralis.one
+
+### Caddy Configuration
+The Caddyfile is configured at `/etc/caddy/Caddyfile` with:
+- SSL certificates for both domains
+- API proxy: `/api/*` → `localhost:4000`
+- Static file serving from `/home/ftpuser/ftp/files/astralis-agency-server/build`
+- Security headers and gzip compression
+- Access logging to `/var/log/caddy/astralis.log`
+
+### Build Process for Production
+1. **Environment Setup**: Generate production environment variables
+   ```bash
+   yarn generate:env
+   yarn generate:server-env
+   ```
+
+2. **Frontend Build**: Build client with relative API URLs
+   ```bash
+   yarn build:client
+   ```
+
+3. **Copy Build Files**: Deploy to serving directory
+   ```bash
+   yarn postbuild
+   ```
+
+4. **Database Setup**: Apply migrations and seed data
+   ```bash
+   yarn prisma migrate deploy
+   yarn run tsx prisma/seed.ts
+   yarn run tsx prisma/seed-testimonials.ts
+   ```
+
+5. **Start Services**:
+   ```bash
+   yarn start  # Backend on port 4000
+   sudo systemctl reload caddy  # Reload web server
+   ```
+
+### Key Configuration Changes Made
+- **API URLs**: Updated to use relative URLs instead of localhost:4000
+- **Environment Variables**: VITE_API_URL set to empty string for relative URLs
+- **Caddy Proxy**: Fixed handle_path to handle for proper API routing
+- **File Permissions**: Added caddy user to ftpuser group for file access
+- **Database**: Full migration reset and seeding with sample data
+
+### Environment Files
+- **Root `.env`**: Contains all configuration variables
+- **Client `.env`**: Auto-generated with VITE_API_URL=(empty for relative URLs)
+- **Server `.env`**: Auto-generated with database and server settings
+
+### Sample Data Seeded
+- 1 admin user (admin@astralis.one / password from seed script)
+- 14 categories (Web Dev, Mobile Dev, UI/UX, etc.)
+- 35+ tags (React, Node.js, TypeScript, etc.)
+- 3 sample blog posts
+- 4 sample marketplace items
+- 5 customer testimonials
+
 ## Testing
 ```
 yarn test
-``` 
+```
+
+## Recent Updates (2025-06-30)
+
+### Infrastructure & Deployment
+- ✅ **Domain Setup**: Configured astralisone.com and astralis.one with Caddy
+- ✅ **SSL/HTTPS**: Automatic SSL certificates via Caddy
+- ✅ **API Proxy**: Fixed Caddy configuration to properly route /api/* to backend
+- ✅ **File Permissions**: Resolved 403 errors by adding caddy to ftpuser group
+- ✅ **Static Serving**: Frontend builds served from /build directory
+
+### Frontend & API Integration
+- ✅ **Relative URLs**: Updated API calls to use relative URLs instead of localhost:4000
+- ✅ **Environment Configuration**: Modified scripts to generate empty VITE_API_URL
+- ✅ **Build Process**: Clean rebuild with new API configuration
+- ✅ **Asset Updates**: New build files with proper relative API calls
+
+### Database & Content
+- ✅ **Migration Reset**: Complete database migration reset and reapplication
+- ✅ **Schema Verification**: All 12 tables properly created with relationships
+- ✅ **Data Seeding**: Successfully seeded with comprehensive sample data
+- ✅ **Production Ready**: Database fully populated and API endpoints functional
+
+### System Integration
+- ✅ **Backend Service**: Server running on port 4000 with all API endpoints
+- ✅ **Process Management**: Backend service properly started and accessible
+- ✅ **End-to-End Testing**: Full system tested and verified working
+- ✅ **Documentation**: Updated README with current deployment configuration 

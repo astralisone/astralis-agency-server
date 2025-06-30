@@ -2,10 +2,11 @@ import dotenv from 'dotenv';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { dirname } from 'path';
-import { Sequelize } from 'sequelize';
-import pkg from 'pg';
-const { Client } = pkg;
-import { Product } from '../models/Product';
+import { PrismaClient } from '@prisma/client';
+import { exec } from 'child_process';
+import { promisify } from 'util';
+
+const execAsync = promisify(exec);
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -13,94 +14,74 @@ const __dirname = dirname(__filename);
 // Load environment variables
 dotenv.config({ path: path.join(__dirname, '../../../.env') });
 
+const prisma = new PrismaClient();
+
 async function setupDatabase() {
-  console.log('Starting database setup...');
-  console.log('Environment:', process.env.NODE_ENV);
-  console.log('Connection details:', {
-    user: process.env.DB_USER,
-    host: process.env.DB_HOST,
-    port: process.env.DB_PORT,
-    database: 'postgres',
-    url: process.env.DATABASE_URL?.replace(/:([^:@]{1,})@/, ':***@'), // Mask password
-  });
-
-  const client = new Client({
-    user: process.env.DB_USER,
-    password: process.env.DB_PASSWORD,
-    host: process.env.DB_HOST || 'localhost',
-    port: parseInt(process.env.DB_PORT || '5432'),
-    database: 'postgres',
-    connectionTimeoutMillis: 5000,
-  });
-
   try {
-    console.log('Attempting to connect to PostgreSQL...');
-    await client.connect();
-    console.log('Connected successfully to PostgreSQL');
+    console.log('Setting up database...');
     
-    // Check if database exists
-    console.log(`Checking if database "${process.env.DB_NAME}" exists...`);
-    const dbExists = await client.query(
-      `SELECT 1 FROM pg_database WHERE datname = $1`,
-      [process.env.DB_NAME]
-    );
-
-    if (dbExists.rows.length === 0) {
-      console.log(`Creating database ${process.env.DB_NAME}...`);
-      try {
-        await client.query(`CREATE DATABASE ${process.env.DB_NAME}`);
-        console.log('Database created successfully');
-      } catch (error) {
-        console.error('Error creating database:', error);
-        throw error;
-      }
-    } else {
-      console.log('Database already exists');
-    }
-
-    await client.end();
-    console.log('Closed initial postgres connection');
-
-    // Connect with Sequelize
-    console.log('Connecting to database with Sequelize...');
-    const sequelize = new Sequelize(process.env.DATABASE_URL as string, {
-      dialect: 'postgres',
-      logging: (msg) => console.log('Sequelize:', msg),
-      retry: {
-        max: 3,
-        timeout: 3000
-      }
-    });
-
+    // Test database connection
     try {
-      await sequelize.authenticate();
-      console.log('Sequelize connection authenticated');
-
-      console.log('Syncing Product model...');
-      await Product.sync({ force: true });
-      console.log('Product model synced');
-
-      await sequelize.close();
-      console.log('Database setup completed successfully');
-      process.exit(0);
+      await prisma.$queryRaw`SELECT 1`;
+      console.log('Database connection successful');
     } catch (error) {
-      console.error('Sequelize error:', error);
-      throw error;
+      console.error('Database connection failed:', error);
+      console.log('Creating database...');
+      
+      // Extract database name from DATABASE_URL
+      const dbUrl = process.env.DATABASE_URL;
+      if (!dbUrl) {
+        throw new Error('DATABASE_URL environment variable is not set');
+      }
+      
+      const dbName = new URL(dbUrl).pathname.substring(1);
+      console.log(`Database name: ${dbName}`);
+      
+      // Create database using psql
+      try {
+        await execAsync(`createdb ${dbName}`);
+        console.log(`Database ${dbName} created successfully`);
+      } catch (createError) {
+        console.log(`Database ${dbName} might already exist, continuing...`);
+      }
     }
+    
+    // Run migrations
+    console.log('Running migrations...');
+    try {
+      await execAsync('npx prisma migrate deploy');
+      console.log('Migrations applied successfully');
+    } catch (migrateError) {
+      console.error('Error applying migrations:', migrateError);
+      throw migrateError;
+    }
+    
+    console.log('Database setup completed successfully');
+    return true;
   } catch (error) {
-    console.error('Setup failed:', error);
-    if (client) {
-      console.log('Attempting to close postgres client...');
-      await client.end().catch(err => console.error('Error closing client:', err));
-    }
-    process.exit(1);
+    console.error('Database setup failed:', error);
+    return false;
+  } finally {
+    await prisma.$disconnect();
   }
 }
 
-// Add this to handle unhandled promise rejections
-process.on('unhandledRejection', (error) => {
-  console.error('Unhandled promise rejection:', error);
-  process.exit(1);
-});
+// Run the function if this script is executed directly
+if (process.argv[1] === fileURLToPath(import.meta.url)) {
+  setupDatabase()
+    .then((success) => {
+      if (success) {
+        console.log('Database setup completed');
+        process.exit(0);
+      } else {
+        console.error('Database setup failed');
+        process.exit(1);
+      }
+    })
+    .catch((err) => {
+      console.error('Unhandled error during database setup:', err);
+      process.exit(1);
+    });
+}
 
-setupDatabase(); 
+export default setupDatabase;

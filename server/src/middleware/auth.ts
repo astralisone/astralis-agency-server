@@ -1,6 +1,7 @@
 import { Request, Response, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
 import User from '../models/User';
+import { User as PrismaUser } from '@prisma/client';
 
 // Extend Express Request interface to include user property
 declare global {
@@ -71,7 +72,7 @@ export const isAdmin = (req: Request, res: Response, next: NextFunction) => {
 };
 
 // Generate JWT token
-export const generateToken = (user: User): string => {
+export const generateToken = (user: PrismaUser): string => {
   const payload = {
     id: user.id,
     email: user.email,
@@ -79,4 +80,4 @@ export const generateToken = (user: User): string => {
   };
   
   return jwt.sign(payload, JWT_SECRET, { expiresIn: '24h' });
-}; 
+};

@@ -1,5 +1,15 @@
 import nodemailer, { Transporter } from 'nodemailer';
-import { ContactForm } from '../models/ContactForm';
+
+// Define a ContactFormData interface to match our ContactForm model
+interface ContactFormData {
+  id?: number;
+  name: string;
+  email: string;
+  message: string;
+  status?: string;
+  submittedAt?: Date;
+  updatedAt?: Date;
+}
 
 const transporter: Transporter = nodemailer.createTransport({
   service: 'gmail',
@@ -9,7 +19,7 @@ const transporter: Transporter = nodemailer.createTransport({
   },
 });
 
-export async function sendContactFormEmail(contactForm: ContactForm) {
+export async function sendContactFormEmail(contactForm: ContactFormData) {
   const mailOptions = {
     from: process.env.EMAIL_USER,
     to: process.env.CONTACT_EMAIL_RECIPIENT,
@@ -30,4 +40,4 @@ export async function sendContactFormEmail(contactForm: ContactForm) {
   };
 
   return transporter.sendMail(mailOptions);
-} 
+}
