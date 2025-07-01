@@ -1,6 +1,6 @@
 import express from 'express';
-import { ContactForm } from '../models/ContactForm';
-import { sendContactFormEmail } from '../services/email';
+import { ContactForm } from '../models/ContactForm.js';
+import { sendContactFormEmail } from '../services/email.js';
 
 const router = express.Router();
 

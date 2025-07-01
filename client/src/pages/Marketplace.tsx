@@ -85,11 +85,17 @@ export function MarketplacePage() {
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="all">All Categories</SelectItem>
-            {categoriesData?.map((category) => (
-              <SelectItem key={category.slug} value={category.slug}>
-                {category.name} ({category._count.marketplaceItems})
+            {categoriesData?.length ? (
+              categoriesData.map((category) => (
+                <SelectItem key={category.slug} value={category.slug || `category-${category.id}`}>
+                  {category.name} ({category._count?.marketplaceItems || 0})
+                </SelectItem>
+              ))
+            ) : (
+              <SelectItem value="no-categories" disabled>
+                No categories available
               </SelectItem>
-            ))}
+            )}
           </SelectContent>
         </Select>
 
@@ -102,11 +108,17 @@ export function MarketplacePage() {
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="all">All Tags</SelectItem>
-            {tagsData?.map((tag) => (
-              <SelectItem key={tag.slug} value={tag.slug}>
-                {tag.name} ({tag._count.marketplaceItems})
+            {tagsData?.length ? (
+              tagsData.map((tag) => (
+                <SelectItem key={tag.slug} value={tag.slug || `tag-${tag.id}`}>
+                  {tag.name} ({tag._count?.marketplaceItems || 0})
+                </SelectItem>
+              ))
+            ) : (
+              <SelectItem value="no-tags" disabled>
+                No tags available
               </SelectItem>
-            ))}
+            )}
           </SelectContent>
         </Select>
 

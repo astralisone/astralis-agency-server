@@ -255,11 +255,17 @@ export function MarketplaceAdminPage() {
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="all">All Categories</SelectItem>
-            {categoriesData?.map((cat) => (
-              <SelectItem key={cat.slug} value={cat.slug}>
-                {cat.name}
+            {categoriesData?.length ? (
+              categoriesData.map((cat) => (
+                <SelectItem key={cat.slug} value={cat.slug || cat.name}>
+                  {cat.name}
+                </SelectItem>
+              ))
+            ) : (
+              <SelectItem value="no-categories" disabled>
+                No categories available
               </SelectItem>
-            ))}
+            )}
           </SelectContent>
         </Select>
         <Select value={status} onValueChange={setStatus}>

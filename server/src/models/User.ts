@@ -1,6 +1,6 @@
 import { User as PrismaUser, UserRole } from '@prisma/client';
 import bcrypt from 'bcrypt';
-import prisma from '../lib/prisma';
+import prisma from '../lib/prisma.js';
 
 // User model interface
 export interface UserAttributes {

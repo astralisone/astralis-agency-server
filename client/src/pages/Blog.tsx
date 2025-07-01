@@ -6,7 +6,6 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Input } from '@/components/ui/input';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Link } from 'react-router-dom';
 import { formatDate } from '@/lib/utils';
 
@@ -22,9 +21,13 @@ interface BlogFilters {
 export function BlogPage() {
   const [page, setPage] = useState(1);
   const [filters, setFilters] = useState<BlogFilters>({
+    category: '',
+    tag: '',
     sortBy: 'publishedAt',
     order: 'desc',
   });
+
+  console.log('🚀 BlogPage render - Current filters:', filters);
 
   // Build query string from filters
   const queryString = new URLSearchParams({
@@ -32,7 +35,7 @@ export function BlogPage() {
     limit: '9',
     status: 'PUBLISHED',
     ...Object.fromEntries(
-      Object.entries(filters).filter(([_, value]) => value !== undefined)
+      Object.entries(filters).filter(([_, value]) => value !== undefined && value !== '')
     ),
   }).toString();
 
@@ -59,80 +62,30 @@ export function BlogPage() {
 
   // Handle filter changes
   const handleFilterChange = (key: keyof BlogFilters, value: any) => {
-    setFilters((prev) => ({ ...prev, [key]: value }));
+    console.log(`🔄 Filter Change - ${key}:`, { 
+      incoming: value, 
+      type: typeof value, 
+      isEmpty: value === '', 
+      isUndefined: value === undefined,
+      isNull: value === null 
+    });
+    setFilters((prev) => {
+      const newFilters = { ...prev, [key]: value };
+      console.log('📊 New filters state:', newFilters);
+      return newFilters;
+    });
     setPage(1); // Reset page when filters change
   };
 
   return (
     <div className="container py-8">
       {/* Filters */}
-      <div className="mb-8 grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+      <div className="mb-8 grid gap-4 md:grid-cols-1">
         <Input
           placeholder="Search posts..."
           value={filters.search || ''}
           onChange={(e) => handleFilterChange('search', e.target.value)}
         />
-
-        <Select
-          value={filters.category}
-          onValueChange={(value) => handleFilterChange('category', value)}
-        >
-          <SelectTrigger>
-            <SelectValue placeholder="Select category" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="">All Categories</SelectItem>
-            {categoriesData?.map((category) => (
-              <SelectItem key={category.slug} value={category.slug}>
-                {category.name} ({category._count.posts})
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-
-        <Select
-          value={filters.tag}
-          onValueChange={(value) => handleFilterChange('tag', value)}
-        >
-          <SelectTrigger>
-            <SelectValue placeholder="Select tag" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="">All Tags</SelectItem>
-            {tagsData?.map((tag) => (
-              <SelectItem key={tag.slug} value={tag.slug}>
-                {tag.name} ({tag._count.posts})
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-
-        <Select
-          value={filters.sortBy}
-          onValueChange={(value: any) => handleFilterChange('sortBy', value)}
-        >
-          <SelectTrigger>
-            <SelectValue placeholder="Sort by" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="publishedAt">Latest</SelectItem>
-            <SelectItem value="viewCount">Most Viewed</SelectItem>
-            <SelectItem value="title">Title</SelectItem>
-          </SelectContent>
-        </Select>
-
-        <Select
-          value={filters.order}
-          onValueChange={(value: any) => handleFilterChange('order', value)}
-        >
-          <SelectTrigger>
-            <SelectValue placeholder="Order" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="desc">Descending</SelectItem>
-            <SelectItem value="asc">Ascending</SelectItem>
-          </SelectContent>
-        </Select>
       </div>
 
       {/* Posts Grid */}

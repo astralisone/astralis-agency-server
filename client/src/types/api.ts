@@ -82,7 +82,8 @@ export interface Category {
   name: string;
   slug: string;
   description: string | null;
-  _count: {
+  postsCount?: number;
+  _count?: {
     marketplaceItems?: number;
     posts?: number;
   };
@@ -92,7 +93,8 @@ export interface Tag {
   id: string;
   name: string;
   slug: string;
-  _count: {
+  postsCount?: number;
+  _count?: {
     marketplaceItems?: number;
     posts?: number;
   };

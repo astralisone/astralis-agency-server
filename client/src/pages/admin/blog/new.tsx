@@ -12,9 +12,9 @@ import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { X, Plus, ArrowLeft, Loader2, CheckCircle2, AlertCircle } from "lucide-react";
 import { Link } from "react-router-dom";
 import { Category, Tag } from "@/types/api";
@@ -216,11 +216,11 @@ export function NewBlogPostPage() {
                       onValueChange={(value) => form.setValue("categoryId", value)}
                     >
                       <SelectTrigger>
-                        <SelectValue placeholder="Select category" />
+                        <SelectValue placeholder="Select a category" />
                       </SelectTrigger>
                       <SelectContent>
                         {categoriesLoading ? (
-                          <SelectItem value="loading" disabled>
+                          <SelectItem value="loading-categories" disabled>
                             Loading categories...
                           </SelectItem>
                         ) : categoriesData?.data?.length ? (
@@ -230,7 +230,7 @@ export function NewBlogPostPage() {
                             </SelectItem>
                           ))
                         ) : (
-                          <SelectItem value="none" disabled>
+                          <SelectItem value="no-categories" disabled>
                             No categories found
                           </SelectItem>
                         )}
@@ -247,9 +247,7 @@ export function NewBlogPostPage() {
                     <Label htmlFor="status">Status *</Label>
                     <Select
                       value={form.getValues("status")}
-                      onValueChange={(value: "DRAFT" | "PUBLISHED" | "ARCHIVED") => 
-                        form.setValue("status", value)
-                      }
+                      onValueChange={(value) => form.setValue("status", value as "DRAFT" | "PUBLISHED" | "ARCHIVED")}
                     >
                       <SelectTrigger>
                         <SelectValue placeholder="Select status" />

@@ -1,9 +1,9 @@
 import express from 'express';
-import { authenticate as authenticateJWT, isAdmin as authorizeAdmin } from '../middleware/auth';
+import { authenticate as authenticateJWT, isAdmin as authorizeAdmin } from '../middleware/auth.js';
 import { PrismaClient, Prisma } from '@prisma/client';
 import { Request } from 'express';
 import { ParsedQs } from 'qs';
-import { formatErrorResponse, ErrorResponse, createNotFoundError, getErrorMessage } from '../utils/error-handler';
+import { formatErrorResponse, ErrorResponse, createNotFoundError, getErrorMessage } from '../utils/error-handler.js';
 
 interface TypedRequestQuery extends Request {
   query: {
@@ -24,6 +24,76 @@ interface SuccessResponse<T> {
 
 const router = express.Router();
 const prisma = new PrismaClient();
+
+// Get blog categories
+router.get('/categories', async (req, res) => {
+  try {
+    const categories = await prisma.category.findMany({
+      select: {
+        id: true,
+        name: true,
+        slug: true,
+        description: true,
+        _count: {
+          select: {
+            posts: true,
+          },
+        },
+      },
+    });
+
+    const formattedCategories = categories.map(category => ({
+      id: category.id,
+      name: category.name,
+      slug: category.slug,
+      description: category.description,
+      postsCount: category._count.posts,
+    }));
+
+    const response: SuccessResponse<typeof formattedCategories> = {
+      status: 'success',
+      data: formattedCategories,
+    };
+
+    res.json(response);
+  } catch (error: unknown) {
+    res.status(500).json(formatErrorResponse(error, 'Failed to fetch categories'));
+  }
+});
+
+// Get blog tags
+router.get('/tags', async (req, res) => {
+  try {
+    const tags = await prisma.tag.findMany({
+      select: {
+        id: true,
+        name: true,
+        slug: true,
+        _count: {
+          select: {
+            posts: true,
+          },
+        },
+      },
+    });
+
+    const formattedTags = tags.map(tag => ({
+      id: tag.id,
+      name: tag.name,
+      slug: tag.slug,
+      postsCount: tag._count.posts,
+    }));
+
+    const response: SuccessResponse<typeof formattedTags> = {
+      status: 'success',
+      data: formattedTags,
+    };
+
+    res.json(response);
+  } catch (error: unknown) {
+    res.status(500).json(formatErrorResponse(error, 'Failed to fetch tags'));
+  }
+});
 
 // Get all blog posts with pagination and filtering
 router.get('/', async (req: TypedRequestQuery, res) => {
@@ -134,109 +204,6 @@ router.get('/', async (req: TypedRequestQuery, res) => {
   }
 });
 
-// Get a single blog post by ID
-router.get('/:id', async (req, res) => {
-  try {
-    const { id } = req.params;
-    
-    const post = await prisma.post.findUnique({
-      where: { id },
-      include: {
-        author: {
-          select: {
-            id: true,
-            name: true,
-            email: true,
-            avatar: true,
-          },
-        },
-        category: true,
-        tags: true,
-      },
-    });
-
-    if (!post) {
-      return res.status(404).json({ status: 'error', message: 'Blog post not found' });
-    }
-
-    res.json({ status: 'success', data: post });
-  } catch (error) {
-    console.error('Error fetching blog post:', error);
-    res.status(500).json({ status: 'error', message: 'Failed to fetch blog post' });
-  }
-});
-
-// Get a single blog post by slug
-router.get('/:slug', async (req, res) => {
-  try {
-    const { slug } = req.params;
-    
-    const post = await prisma.post.findUnique({
-      where: { slug },
-      include: {
-        author: {
-          select: {
-            id: true,
-            name: true,
-            email: true,
-            avatar: true,
-          },
-        },
-        category: true,
-        tags: true,
-      },
-    });
-
-    if (!post) {
-      return res.status(404).json({ status: 'error', message: 'Blog post not found' });
-    }
-
-    res.json({ status: 'success', data: post });
-  } catch (error) {
-    console.error('Error fetching post:', error instanceof Error ? error.message : 'Unknown error');
-    res.status(500).json({
-      status: 'error',
-      message: 'Failed to fetch post',
-      details: error instanceof Error ? error.message : 'Unknown error'
-    });
-  }
-});
-
-// Get blog categories
-router.get('/categories', async (req, res) => {
-  try {
-    const categories = await prisma.category.findMany({
-      select: {
-        id: true,
-        name: true,
-        slug: true,
-        description: true,
-        _count: {
-          select: {
-            posts: true,
-          },
-        },
-      },
-    });
-
-    const formattedCategories = categories.map(category => ({
-      id: category.id,
-      name: category.name,
-      slug: category.slug,
-      description: category.description,
-      postsCount: category._count.posts,
-    }));
-
-    const response: SuccessResponse<typeof formattedCategories> = {
-      status: 'success',
-      data: formattedCategories,
-    };
-
-    res.json(response);
-  } catch (error: unknown) {
-    res.status(500).json(formatErrorResponse(error, 'Failed to fetch categories'));
-  }
-});
 
 router.post('/categories', authenticateJWT, authorizeAdmin, async (req, res) => {
   try {
@@ -393,40 +360,6 @@ router.delete('/categories/:id', authenticateJWT, authorizeAdmin, async (req, re
       message: 'Failed to delete category',
       error: getErrorMessage(error)
     });
-  }
-});
-
-// Get blog tags
-router.get('/tags', async (req, res) => {
-  try {
-    const tags = await prisma.tag.findMany({
-      select: {
-        id: true,
-        name: true,
-        slug: true,
-        _count: {
-          select: {
-            posts: true,
-          },
-        },
-      },
-    });
-
-    const formattedTags = tags.map(tag => ({
-      id: tag.id,
-      name: tag.name,
-      slug: tag.slug,
-      postsCount: tag._count.posts,
-    }));
-
-    const response: SuccessResponse<typeof formattedTags> = {
-      status: 'success',
-      data: formattedTags,
-    };
-
-    res.json(response);
-  } catch (error: unknown) {
-    res.status(500).json(formatErrorResponse(error, 'Failed to fetch tags'));
   }
 });
 
@@ -720,6 +653,42 @@ router.delete('/:id', async (req, res) => {
     res.json(response);
   } catch (error: unknown) {
     res.status(500).json(formatErrorResponse(error, 'Failed to delete post'));
+  }
+});
+
+// Get a single blog post by slug (catch-all route - must be last)
+router.get('/:slug', async (req, res) => {
+  try {
+    const { slug } = req.params;
+    
+    const post = await prisma.post.findUnique({
+      where: { slug },
+      include: {
+        author: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+            avatar: true,
+          },
+        },
+        category: true,
+        tags: true,
+      },
+    });
+
+    if (!post) {
+      return res.status(404).json({ status: 'error', message: 'Blog post not found' });
+    }
+
+    res.json({ status: 'success', data: post });
+  } catch (error) {
+    console.error('Error fetching post:', error instanceof Error ? error.message : 'Unknown error');
+    res.status(500).json({
+      status: 'error',
+      message: 'Failed to fetch post',
+      details: error instanceof Error ? error.message : 'Unknown error'
+    });
   }
 });
 

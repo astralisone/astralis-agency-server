@@ -371,15 +371,19 @@ export function EditMarketplaceItemPage() {
                       </SelectTrigger>
                       <SelectContent>
                         {categoriesLoading ? (
-                          <SelectItem value="loading" disabled>
+                          <SelectItem value="loading-categories" disabled>
                             Loading categories...
                           </SelectItem>
-                        ) : (
-                          categoriesData?.data.map((category) => (
+                        ) : categoriesData?.data?.length ? (
+                          categoriesData.data.map((category) => (
                             <SelectItem key={category.id} value={category.id}>
                               {category.name}
                             </SelectItem>
                           ))
+                        ) : (
+                          <SelectItem value="no-categories" disabled>
+                            No categories found
+                          </SelectItem>
                         )}
                       </SelectContent>
                     </Select>

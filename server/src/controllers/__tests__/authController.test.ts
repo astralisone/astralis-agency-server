@@ -1,9 +1,9 @@
 import { Request, Response, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
 import bcrypt from 'bcrypt';
-import { register, login, getCurrentUser } from '../authController';
-import User from '../../models/User';
-import { generateToken } from '../../middleware/auth';
+import { register, login, getCurrentUser } from '../authController.js';
+import User from '../../models/User.js';
+import { generateToken } from '../../middleware/auth.js';
 
 // Mock dependencies
 jest.mock('../../models/User');

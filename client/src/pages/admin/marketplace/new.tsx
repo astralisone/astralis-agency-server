@@ -449,11 +449,17 @@ export function NewMarketplaceItemPage() {
                             </SelectTrigger>
                           </FormControl>
                           <SelectContent>
-                            {categoriesData?.data.map((category) => (
-                              <SelectItem key={category.id} value={category.id}>
-                                {category.name}
+                            {!categoriesData?.data?.length ? (
+                              <SelectItem value="no-categories" disabled>
+                                No categories available
                               </SelectItem>
-                            ))}
+                            ) : (
+                              categoriesData.data.map((category) => (
+                                <SelectItem key={category.id} value={category.id}>
+                                  {category.name}
+                                </SelectItem>
+                              ))
+                            )}
                           </SelectContent>
                         </Select>
                         <FormMessage />

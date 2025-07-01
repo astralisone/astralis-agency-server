@@ -1,6 +1,6 @@
 import { Request, Response, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
-import User from '../models/User';
+import User from '../models/User.js';
 import { User as PrismaUser } from '@prisma/client';
 
 // Extend Express Request interface to include user property

@@ -3,6 +3,7 @@ import { Providers } from "@/components/providers";
 import { Navbar } from "@/components/navbar";
 import { Footer } from "@/components/footer";
 import { Toaster } from "@/components/ui/toaster";
+import { ErrorBoundary } from "@/components/error-boundary";
 import { HomePage } from "@/pages/home";
 import { MarketplacePage } from "@/pages/Marketplace.tsx";
 import { BlogPage } from "@/pages/Blog.tsx";
@@ -36,7 +37,11 @@ function App() {
             <Route path="/" element={<HomePage />} />
             <Route path="/index.html" element={<HomePage />} />
             <Route path="/marketplace" element={<MarketplacePage />} />
-            <Route path="/blog" element={<BlogPage />} />
+            <Route path="/blog" element={
+              <ErrorBoundary>
+                <BlogPage />
+              </ErrorBoundary>
+            } />
             <Route path="/blog/:id" element={<BlogPostPage />} />
             <Route path="/contact" element={<ContactPage />} />
             <Route path="/checkout" element={<CheckoutPage />} />

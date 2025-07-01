@@ -1,9 +1,9 @@
 import express from 'express';
-import { authenticate as authenticateJWT, isAdmin as authorizeAdmin } from '../middleware/auth';
+import { authenticate as authenticateJWT, isAdmin as authorizeAdmin } from '../middleware/auth.js';
 import { PrismaClient, Prisma, ItemStatus } from '@prisma/client';
 import { Request } from 'express';
 import { ParsedQs } from 'qs';
-import { formatErrorResponse, ErrorResponse, createNotFoundError, getErrorMessage } from '../utils/error-handler';
+import { formatErrorResponse, ErrorResponse, createNotFoundError, getErrorMessage } from '../utils/error-handler.js';
 
 interface TypedRequestQuery extends Request {
   query: {
@@ -151,6 +151,42 @@ router.get('/', async (req: TypedRequestQuery, res) => {
     res.json(response);
   } catch (error: unknown) {
     res.status(500).json(formatErrorResponse(error, 'Failed to fetch marketplace items'));
+  }
+});
+
+// Get marketplace categories
+router.get('/categories', async (req, res) => {
+  try {
+    const categories = await prisma.category.findMany({
+      select: {
+        id: true,
+        name: true,
+        slug: true,
+        description: true,
+        _count: {
+          select: {
+            marketplaceItems: true,
+          },
+        },
+      },
+    });
+
+    const formattedCategories = categories.map(category => ({
+      id: category.id,
+      name: category.name,
+      slug: category.slug,
+      description: category.description,
+      itemsCount: category._count.marketplaceItems,
+    }));
+
+    const response: SuccessResponse<typeof formattedCategories> = {
+      status: 'success',
+      data: formattedCategories,
+    };
+
+    res.json(response);
+  } catch (error: unknown) {
+    res.status(500).json(formatErrorResponse(error, 'Failed to fetch marketplace categories'));
   }
 });
 
@@ -353,42 +389,6 @@ router.delete('/:id', async (req, res) => {
     res.json(response);
   } catch (error: unknown) {
     res.status(500).json(formatErrorResponse(error, 'Failed to delete marketplace item'));
-  }
-});
-
-// Get marketplace categories
-router.get('/categories', async (req, res) => {
-  try {
-    const categories = await prisma.category.findMany({
-      select: {
-        id: true,
-        name: true,
-        slug: true,
-        description: true,
-        _count: {
-          select: {
-            marketplaceItems: true,
-          },
-        },
-      },
-    });
-
-    const formattedCategories = categories.map(category => ({
-      id: category.id,
-      name: category.name,
-      slug: category.slug,
-      description: category.description,
-      itemsCount: category._count.marketplaceItems,
-    }));
-
-    const response: SuccessResponse<typeof formattedCategories> = {
-      status: 'success',
-      data: formattedCategories,
-    };
-
-    res.json(response);
-  } catch (error: unknown) {
-    res.status(500).json(formatErrorResponse(error, 'Failed to fetch marketplace categories'));
   }
 });
 

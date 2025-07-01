@@ -1,5 +1,5 @@
 import express from 'express';
-import { authenticate as authenticateJWT, isAdmin as authorizeAdmin } from '../middleware/auth';
+import { authenticate as authenticateJWT, isAdmin as authorizeAdmin } from '../middleware/auth.js';
 import { PrismaClient, Prisma } from '@prisma/client';
 import { Request } from 'express';
 import { ParsedQs } from 'qs';

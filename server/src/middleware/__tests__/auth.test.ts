@@ -1,6 +1,6 @@
 import { Request, Response, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
-import { authenticate, isAdmin } from '../auth';
+import { authenticate, isAdmin } from '../auth.js';
 
 // Mock the jsonwebtoken module
 jest.mock('jsonwebtoken');
