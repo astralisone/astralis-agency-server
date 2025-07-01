@@ -110,9 +110,48 @@ yarn build
 ## Project Structure
 
 ### Server Architecture
-The server is built with Express.js and uses TypeScript. The main entry point is `server.js` in the root directory, which imports the server from `server/dist/index.js`. The TypeScript source files are located in `server/src` and are compiled to JavaScript in `server/dist`.
+The server is built with Express.js and uses TypeScript with Prisma ORM for database operations. The main entry point is `server.js` in the root directory, which imports the server from `server/dist/index.js`. The TypeScript source files are located in `server/src` and are compiled to JavaScript in `server/dist`.
 
 The project uses ES modules throughout, with the `"type": "module"` setting in package.json.
+
+### Directory Structure
+```
+/
+├── build/                     # Frontend production build files
+├── client/                    # React/Vite frontend application
+│   ├── src/
+│   │   ├── components/        # React components (UI, sections, providers)
+│   │   │   ├── admin/         # Admin-specific components
+│   │   │   ├── auth/          # Authentication components
+│   │   │   ├── blog/          # Blog-related components
+│   │   │   ├── cart/          # Shopping cart components
+│   │   │   ├── checkout/      # Payment and checkout components
+│   │   │   ├── contact/       # Contact form components
+│   │   │   ├── marketplace/   # Marketplace components
+│   │   │   ├── providers/     # Context providers (auth, theme, payment)
+│   │   │   ├── sections/      # Homepage sections (hero, services, testimonials)
+│   │   │   └── ui/            # Reusable UI components
+│   │   ├── hooks/             # Custom React hooks
+│   │   ├── lib/               # Utility functions and configurations
+│   │   ├── pages/             # Page components and routing
+│   │   └── types/             # TypeScript type definitions
+│   └── dist/                  # Client build output
+├── server/                    # Node.js/Express backend
+│   ├── src/
+│   │   ├── config/            # Database and application configuration
+│   │   ├── controllers/       # Route controllers and business logic
+│   │   ├── lib/               # Shared libraries (Prisma client)
+│   │   ├── middleware/        # Express middleware (auth, validation)
+│   │   ├── models/            # Database models (legacy, migrated to Prisma)
+│   │   ├── routes/            # API route definitions
+│   │   ├── scripts/           # Database and setup scripts
+│   │   ├── services/          # External services (email)
+│   │   ├── types/             # TypeScript type definitions
+│   │   └── utils/             # Utility functions
+│   └── dist/                  # Compiled JavaScript output
+├── prisma/                    # Prisma ORM schema and migrations
+└── logs/                      # Application log files
+```
 
 ## Authentication System
 
