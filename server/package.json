@@ -4,18 +4,17 @@
   "type": "module",
   "main": "dist/index.js",
   "scripts": {
-    "start": "node --experimental-specifier-resolution=node --loader ts-node/esm src/index.ts",
-    "start:prod": "node dist/index.js",
+     "build": "tsup",
+    "start:server": "node dist/index.js",
     "dev": "nodemon --exec \"node --experimental-specifier-resolution=node --loader ts-node/esm\" src/index.ts",
-    "setup:db": "node --experimental-specifier-resolution=node --loader ts-node/esm src/scripts/setupDb.ts",
-    "seed:db": "node --experimental-specifier-resolution=node --loader ts-node/esm src/scripts/seedProducts.ts",
-    "db:fresh": "yarn setup:db && yarn seed:db",
+    "db:migrate": "prisma migrate deploy",
+    "db:seed": "prisma db seed",
+    "db:reset": "prisma migrate reset --force",
     "create:admin": "node --experimental-specifier-resolution=node --loader ts-node/esm src/scripts/createAdmin.ts",
     "generate:jwt": "node --experimental-specifier-resolution=node --loader ts-node/esm src/scripts/generateJwtSecret.ts",
     "prisma:generate": "prisma generate",
     "prisma:migrate": "prisma migrate deploy",
     "prisma:studio": "prisma studio",
-    "build": "tsc",
     "clean": "rm -rf dist",
     "test": "jest",
     "test:watch": "jest --watch"
@@ -45,6 +44,10 @@
     "nodemon": "^2.0.22",
     "prisma": "^6.4.1",
     "supertest": "^6.3.4",
-    "ts-jest": "^29.1.2"
+    "ts-jest": "^29.1.2",
+    "tsup": "^8.5.0"
+  },
+  "prisma": {
+    "seed": "node --experimental-specifier-resolution=node --loader ts-node/esm ../prisma/seed.ts"
   }
 }

@@ -2,8 +2,8 @@ import dotenv from 'dotenv';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { dirname } from 'path';
-import prisma from '../lib/prisma.js';
-import User from '../models/User.js';
+import { prisma } from '../config/database';
+import bcrypt from 'bcrypt';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -13,8 +13,12 @@ dotenv.config({ path: path.join(__dirname, '../../../.env') });
 
 async function createAdminUser() {
   try {
+    // Connect to database
+    await prisma.$connect();
+    console.log('Connected to database via Prisma');
+
     // Check if admin user already exists
-    const existingAdmin = await User.findOne({
+    const existingAdmin = await prisma.user.findUnique({
       where: {
         email: 'admin@astralis.one',
       },
@@ -25,12 +29,17 @@ async function createAdminUser() {
       return;
     }
 
+    // Hash password
+    const hashedPassword = await bcrypt.hash('45tr4l15', 12);
+
     // Create admin user
-    const adminUser = await User.create({
-      name: 'Admin User',
-      email: 'admin@astralis.one',
-      password: '45tr4l15', // This will be hashed by the User model
-      role: 'ADMIN',
+    const adminUser = await prisma.user.create({
+      data: {
+        name: 'Admin User',
+        email: 'admin@astralis.one',
+        password: hashedPassword,
+        role: 'ADMIN',
+      },
     });
 
     console.log('Admin user created successfully:');
@@ -48,7 +57,7 @@ async function createAdminUser() {
   } catch (error) {
     console.error('Error creating admin user:', error);
   } finally {
-    // Close Prisma client
+    // Close database connection
     await prisma.$disconnect();
   }
 }

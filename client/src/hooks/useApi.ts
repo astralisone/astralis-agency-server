@@ -43,18 +43,29 @@ export function useApi<T>(
       // Use the API_BASE_URL constant
       console.log(`Fetching data from: ${API_BASE_URL}/api${endpoint}`);
       const response = await fetch(`${API_BASE_URL}/api${endpoint}`);
+      
+      console.log(`Response status for ${endpoint}:`, response.status, response.statusText);
+      console.log(`Response ok for ${endpoint}:`, response.ok);
+      
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error(`HTTP Error for ${endpoint}:`, response.status, errorText);
+        throw {
+          status: 'error',
+          message: `HTTP ${response.status}: ${response.statusText}`,
+          errors: [errorText]
+        };
+      }
+
       const result: ApiResponse<T> = await response.json();
       console.log(`API response for ${endpoint}:`, result);
-
-      if (!response.ok) {
-        throw result;
-      }
 
       setData(result.data);
       console.log(`Data set for ${endpoint}:`, result.data);
       setError(null);
       onSuccess?.(result.data);
     } catch (err) {
+      console.error(`Detailed error for ${endpoint}:`, err);
       const apiError = err as ApiError;
       console.error(`Error fetching data from ${endpoint}:`, apiError);
       setError(apiError);
@@ -79,12 +90,22 @@ export function useApi<T>(
         // Use the API_BASE_URL constant
         console.log(`Fetching data from: ${API_BASE_URL}/api${endpoint}`);
         const response = await fetch(`${API_BASE_URL}/api${endpoint}`);
+        
+        console.log(`Response status for ${endpoint}:`, response.status, response.statusText);
+        console.log(`Response ok for ${endpoint}:`, response.ok);
+        
+        if (!response.ok) {
+          const errorText = await response.text();
+          console.error(`HTTP Error for ${endpoint}:`, response.status, errorText);
+          throw {
+            status: 'error',
+            message: `HTTP ${response.status}: ${response.statusText}`,
+            errors: [errorText]
+          };
+        }
+
         const result: ApiResponse<T> = await response.json();
         console.log(`API response for ${endpoint}:`, result);
-
-        if (!response.ok) {
-          throw result;
-        }
 
         if (isMounted) {
           setData(result.data);
@@ -94,6 +115,7 @@ export function useApi<T>(
         }
       } catch (err) {
         if (isMounted) {
+          console.error(`Detailed error for ${endpoint}:`, err);
           const apiError = err as ApiError;
           console.error(`Error fetching data from ${endpoint}:`, apiError);
           setError(apiError);

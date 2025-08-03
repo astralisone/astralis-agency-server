@@ -1,13 +1,18 @@
 import { Request, Response, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
-import User from '../models/User.js';
-import { User as PrismaUser } from '@prisma/client';
+import { prisma } from '../config/database';
+import { User } from '@prisma/client';
 
 // Extend Express Request interface to include user property
 declare global {
   namespace Express {
     interface Request {
-      user?: any;
+      user?: {
+        id: string;
+        email: string;
+        name: string | null;
+        role: string;
+      };
     }
   }
 }
@@ -37,7 +42,15 @@ export const authenticate = async (req: Request, res: Response, next: NextFuncti
     const decoded = jwt.verify(token, JWT_SECRET) as JwtPayload;
     
     // Find user by id
-    const user = await User.findByPk(decoded.id);
+    const user = await prisma.user.findUnique({
+      where: { id: decoded.id },
+      select: {
+        id: true,
+        email: true,
+        name: true,
+        role: true
+      }
+    });
     
     if (!user) {
       return res.status(401).json({ message: 'User not found, authorization denied' });
@@ -52,7 +65,7 @@ export const authenticate = async (req: Request, res: Response, next: NextFuncti
     };
     
     next();
-  } catch (error) {
+  } catch (error: unknown) {
     console.error('Authentication error:', error);
     res.status(401).json({ message: 'Token is not valid' });
   }

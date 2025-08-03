@@ -1,433 +1,349 @@
 import { PrismaClient } from '@prisma/client';
-import { hash } from 'bcrypt';
+import bcrypt from 'bcrypt';
 
 const prisma = new PrismaClient();
 
 async function main() {
-  console.log('Starting seed process...');
-  
-  // Create admin user if it doesn't exist
-  console.log('Creating admin user...');
-  let admin = await prisma.user.findUnique({
-    where: { email: 'admin@astralis.com' }
-  });
-  
-  if (!admin) {
-    const adminPassword = await hash('admin123', 10);
-    admin = await prisma.user.create({
-      data: {
-        email: 'admin@astralis.com',
+  console.log('🌱 Starting database seeding...');
+
+  // Create admin user
+  const adminPassword = await bcrypt.hash('45tr4l15', 12);
+  const admin = await prisma.user.upsert({
+    where: { email: 'admin@astralis.one' },
+    update: {},
+    create: {
+      email: 'admin@astralis.one',
         name: 'Admin User',
         password: adminPassword,
         role: 'ADMIN',
+      bio: 'System Administrator',
+    },
+  });
+
+  // Create test user
+  const userPassword = await bcrypt.hash('password123', 12);
+  const testUser = await prisma.user.upsert({
+    where: { email: 'user@astralis.one' },
+    update: {},
+    create: {
+      email: 'user@astralis.one',
+      name: 'Test User',
+      password: userPassword,
+      role: 'USER',
+      bio: 'Test user for development',
       },
     });
-    console.log('Admin user created');
-  } else {
-    console.log('Admin user already exists');
-  }
 
   // Create categories
-  console.log('Creating categories...');
-  
-  // Define category data
-  const categoryData = [
-    // Web & Tech Categories
-    { name: 'Web Development', slug: 'web-development', description: 'Web development services and solutions' },
-    { name: 'Mobile Development', slug: 'mobile-development', description: 'Mobile app development for iOS and Android' },
-    { name: 'UI/UX Design', slug: 'ui-ux-design', description: 'User interface and experience design services' },
-    { name: 'E-commerce', slug: 'e-commerce', description: 'Online store development and solutions' },
-    
-    // Marketing Categories
-    { name: 'Digital Marketing', slug: 'digital-marketing', description: 'Digital marketing and SEO services' },
-    { name: 'Content Marketing', slug: 'content-marketing', description: 'Content creation and marketing strategies' },
-    { name: 'Social Media', slug: 'social-media', description: 'Social media management and marketing' },
-    
-    // Design Categories
-    { name: 'Graphic Design', slug: 'graphic-design', description: 'Visual design services for print and digital media' },
-    { name: 'Branding', slug: 'branding', description: 'Brand identity and strategy services' },
-    
-    // Business Categories
-    { name: 'Business Strategy', slug: 'business-strategy', description: 'Business consulting and strategy services' },
-    { name: 'Startup Resources', slug: 'startup-resources', description: 'Resources and services for startups' },
-    
-    // Blog-specific Categories
-    { name: 'Tutorials', slug: 'tutorials', description: 'Step-by-step guides and tutorials' },
-    { name: 'Case Studies', slug: 'case-studies', description: 'Real-world examples and success stories' },
-    { name: 'Industry News', slug: 'industry-news', description: 'Latest news and trends in the industry' },
-  ];
-  
-  // Create categories if they don't exist
-  const categories = [];
-  for (const category of categoryData) {
-    const existingCategory = await prisma.category.findUnique({
-      where: { slug: category.slug }
-    });
-    
-    if (existingCategory) {
-      console.log(`Category ${category.name} already exists`);
-      categories.push(existingCategory);
-    } else {
-      const newCategory = await prisma.category.create({
-        data: category
-      });
-      console.log(`Created category: ${category.name}`);
-      categories.push(newCategory);
-    }
-  }
+  const webDevCategory = await prisma.category.upsert({
+    where: { slug: 'web-development' },
+    update: {},
+    create: {
+      name: 'Web Development',
+      slug: 'web-development',
+      description: 'Articles and resources about web development',
+    },
+  });
+
+  const designCategory = await prisma.category.upsert({
+    where: { slug: 'design' },
+    update: {},
+    create: {
+      name: 'Design',
+      slug: 'design',
+      description: 'Design tips, trends, and resources',
+    },
+  });
+
+  const servicesCategory = await prisma.category.upsert({
+    where: { slug: 'services' },
+    update: {},
+    create: {
+      name: 'Services',
+      slug: 'services',
+      description: 'Professional services and consulting',
+    },
+  });
 
   // Create tags
-  console.log('Creating tags...');
-  
-  // Define tag data
-  const tagData = [
-    // Technology Tags
-    { name: 'React', slug: 'react' },
-    { name: 'Node.js', slug: 'nodejs' },
-    { name: 'JavaScript', slug: 'javascript' },
-    { name: 'TypeScript', slug: 'typescript' },
-    { name: 'Python', slug: 'python' },
-    { name: 'Django', slug: 'django' },
-    { name: 'Vue.js', slug: 'vuejs' },
-    { name: 'Angular', slug: 'angular' },
-    { name: 'Next.js', slug: 'nextjs' },
-    { name: 'AWS', slug: 'aws' },
-    { name: 'Docker', slug: 'docker' },
-    { name: 'Kubernetes', slug: 'kubernetes' },
-    
-    // Design Tags
-    { name: 'UI Design', slug: 'ui-design' },
-    { name: 'UX Design', slug: 'ux-design' },
-    { name: 'Figma', slug: 'figma' },
-    { name: 'Adobe XD', slug: 'adobe-xd' },
-    { name: 'Sketch', slug: 'sketch' },
-    { name: 'Responsive Design', slug: 'responsive-design' },
-    
-    // Marketing Tags
-    { name: 'SEO', slug: 'seo' },
-    { name: 'SEM', slug: 'sem' },
-    { name: 'Content Strategy', slug: 'content-strategy' },
-    { name: 'Email Marketing', slug: 'email-marketing' },
-    { name: 'Social Media Marketing', slug: 'social-media-marketing' },
-    { name: 'Analytics', slug: 'analytics' },
-    { name: 'Conversion Rate Optimization', slug: 'cro' },
-    
-    // Business Tags
-    { name: 'Startups', slug: 'startups' },
-    { name: 'Entrepreneurship', slug: 'entrepreneurship' },
-    { name: 'Funding', slug: 'funding' },
-    { name: 'Growth Hacking', slug: 'growth-hacking' },
-    { name: 'Remote Work', slug: 'remote-work' },
-    
-    // Content Type Tags
-    { name: 'Tutorial', slug: 'tutorial' },
-    { name: 'Guide', slug: 'guide' },
-    { name: 'Case Study', slug: 'case-study' },
-    { name: 'Interview', slug: 'interview' },
-    { name: 'Opinion', slug: 'opinion' },
-    { name: 'News', slug: 'news' },
-  ];
-  
-  // Create tags if they don't exist
-  const tags = [];
-  for (const tag of tagData) {
-    const existingTag = await prisma.tag.findUnique({
-      where: { slug: tag.slug }
-    });
-    
-    if (existingTag) {
-      console.log(`Tag ${tag.name} already exists`);
-      tags.push(existingTag);
-    } else {
-      const newTag = await prisma.tag.create({
-        data: tag
-      });
-      console.log(`Created tag: ${tag.name}`);
-      tags.push(newTag);
-    }
-  }
+  const reactTag = await prisma.tag.upsert({
+    where: { slug: 'react' },
+    update: {},
+    create: {
+      name: 'React',
+      slug: 'react',
+    },
+  });
 
-  // Check if we already have blog posts
-  const existingPosts = await prisma.post.count();
-  if (existingPosts > 0) {
-    console.log(`${existingPosts} blog posts already exist, skipping blog post creation`);
-  } else {
-    // Create sample blog posts
-    console.log('Creating sample blog posts...');
-    await Promise.all([
-      prisma.post.create({
-        data: {
-          title: 'Getting Started with React',
-          slug: 'getting-started-with-react',
-          content: '# Introduction to React\n\nReact is a popular JavaScript library for building user interfaces. In this guide, we\'ll cover the basics of React and how to get started with your first React application.\n\n## What is React?\n\nReact is a JavaScript library created by Facebook for building user interfaces. It allows developers to create large web applications that can change data without reloading the page. The main purpose of React is to be fast, scalable, and simple.\n\n## Setting Up Your First React App\n\nThe easiest way to start with React is to use Create React App. Run the following command in your terminal:\n\n```bash\nnpx create-react-app my-app\ncd my-app\nnpm start\n```\n\nThis will create a new React application and start a development server.\n\n## React Components\n\nComponents are the building blocks of any React application. A component is a JavaScript function or class that optionally accepts inputs (called "props") and returns a React element that describes how a section of the UI should appear.\n\n```jsx\nfunction Welcome(props) {\n  return <h1>Hello, {props.name}</h1>;\n}\n```\n\n## Conclusion\n\nThis is just the beginning of your React journey. As you continue learning, you\'ll discover hooks, context, and many other features that make React powerful and flexible.',
-          excerpt: 'Learn the basics of React and start building modern web applications.',
+  const typescriptTag = await prisma.tag.upsert({
+    where: { slug: 'typescript' },
+    update: {},
+    create: {
+      name: 'TypeScript',
+      slug: 'typescript',
+    },
+  });
+
+  const uiuxTag = await prisma.tag.upsert({
+    where: { slug: 'ui-ux' },
+    update: {},
+    create: {
+      name: 'UI/UX',
+      slug: 'ui-ux',
+    },
+  });
+
+  // Create sample blog posts
+  const post1 = await prisma.post.upsert({
+    where: { slug: 'getting-started-with-react' },
+    update: {},
+    create: {
+      title: 'Getting Started with React in 2024',
+      slug: 'getting-started-with-react',
+      content: `# Getting Started with React in 2024
+
+React continues to be one of the most popular frontend frameworks. In this comprehensive guide, we'll walk through everything you need to know to get started with React development.
+
+## What is React?
+
+React is a JavaScript library for building user interfaces, particularly web applications. It was created by Facebook and is now maintained by Meta and the open-source community.
+
+## Key Features
+
+- **Component-Based**: Build encapsulated components that manage their own state
+- **Virtual DOM**: Efficient updates and rendering
+- **Learn Once, Write Anywhere**: Use React for web, mobile, and desktop applications
+
+## Getting Started
+
+To create a new React application, you can use Create React App:
+
+\`\`\`bash
+npx create-react-app my-app
+cd my-app
+npm start
+\`\`\`
+
+This will set up a new React project with all the necessary dependencies and build tools.`,
+      excerpt: 'Learn how to get started with React development in 2024. This comprehensive guide covers everything from setup to building your first component.',
+      status: 'PUBLISHED',
+      publishedAt: new Date(),
+      authorId: admin.id,
+      categoryId: webDevCategory.id,
+      metaTitle: 'Getting Started with React in 2024 - Complete Guide',
+      metaDescription: 'Learn React development from scratch with this comprehensive 2024 guide. Perfect for beginners and experienced developers.',
+      keywords: ['react', 'javascript', 'frontend', 'web development', 'tutorial'],
+      featured: true,
+      viewCount: 150,
+    },
+  });
+
+  const post2 = await prisma.post.upsert({
+    where: { slug: 'typescript-best-practices' },
+    update: {},
+    create: {
+      title: 'TypeScript Best Practices for Large Applications',
+      slug: 'typescript-best-practices',
+      content: `# TypeScript Best Practices for Large Applications
+
+TypeScript has become essential for building maintainable large-scale applications. Here are the best practices we've learned from years of TypeScript development.
+
+## Type Safety First
+
+Always prefer explicit types over \`any\`. Use strict mode in your TypeScript configuration:
+
+\`\`\`json
+{
+  "compilerOptions": {
+    "strict": true,
+    "noImplicitAny": true,
+    "strictNullChecks": true
+  }
+}
+\`\`\`
+
+## Interface vs Type
+
+Use interfaces for object shapes that might be extended, and types for unions, primitives, and computed types.
+
+## Utility Types
+
+Leverage TypeScript's built-in utility types like \`Partial\`, \`Pick\`, \`Omit\`, and \`Record\` to create more maintainable code.`,
+      excerpt: 'Discover essential TypeScript best practices for building large, maintainable applications. Learn about type safety, interfaces, and utility types.',
           status: 'PUBLISHED',
           publishedAt: new Date(),
-          author: {
-            connect: { id: admin.id },
-          },
-          category: {
-            connect: { id: categories[0].id },
-          },
-          tags: {
-            connect: [
-              { id: tags.find(t => t.name === 'React')?.id },
-              { id: tags.find(t => t.name === 'JavaScript')?.id },
-              { id: tags.find(t => t.name === 'Tutorial')?.id }
-            ].filter(t => t.id !== undefined),
-          },
-          metaTitle: 'Getting Started with React - Complete Guide',
-          metaDescription: 'Learn React fundamentals and best practices in this comprehensive guide.',
-          featured: true,
-        },
-      }),
-      prisma.post.create({
-        data: {
-          title: 'SEO Best Practices 2024',
-          slug: 'seo-best-practices-2024',
-          content: '# SEO in 2024\n\nStay ahead of the competition with these SEO strategies for 2024. Search engine optimization continues to evolve, and keeping up with the latest trends is essential for maintaining visibility online.\n\n## Focus on User Experience\n\nGoogle\'s algorithms are increasingly prioritizing sites that offer excellent user experiences. This includes factors like page speed, mobile-friendliness, and intuitive navigation.\n\n## Content Quality Over Quantity\n\nIn 2024, it\'s better to publish fewer, high-quality pieces of content than to flood your site with mediocre articles. Focus on comprehensive, well-researched content that truly answers user questions.\n\n## AI and Natural Language Processing\n\nWith advancements in AI, search engines are better at understanding natural language. This means you should write for humans first, not search engines. Use conversational language and focus on answering questions naturally.\n\n## Core Web Vitals\n\nGoogle\'s Core Web Vitals have become increasingly important. These metrics measure loading performance, interactivity, and visual stability. Optimizing these aspects of your site can significantly improve your rankings.\n\n## Local SEO\n\nFor businesses with physical locations, local SEO remains crucial. Ensure your Google Business Profile is complete and up-to-date, and collect positive reviews from satisfied customers.\n\n## Conclusion\n\nSEO continues to evolve, but the fundamentals remain the same: create valuable content for users, ensure your site offers a great experience, and stay up-to-date with the latest best practices.',
-          excerpt: 'Learn the latest SEO techniques to improve your website ranking.',
-          status: 'PUBLISHED',
-          publishedAt: new Date(),
-          author: {
-            connect: { id: admin.id },
-          },
-          category: {
-            connect: { id: categories[4].id },
-          },
-          tags: {
-            connect: [
-              { id: tags.find(t => t.name === 'SEO')?.id },
-              { id: tags.find(t => t.name === 'Digital Marketing')?.id || tags.find(t => t.name === 'Content Strategy')?.id },
-              { id: tags.find(t => t.name === 'Guide')?.id }
-            ].filter(t => t.id !== undefined),
-          },
-          metaTitle: 'SEO Best Practices for 2024',
-          metaDescription: 'Discover the latest SEO strategies to improve your website visibility.',
-          featured: true,
-        },
-      }),
-      prisma.post.create({
-        data: {
-          title: 'The Future of Remote Work in Tech',
-          slug: 'future-of-remote-work-tech',
-          content: '# The Future of Remote Work in Tech\n\nThe COVID-19 pandemic accelerated the adoption of remote work across the tech industry. Now, as we move forward, what does the future hold for remote work in tech companies?\n\n## Hybrid Models Becoming Standard\n\nMany companies are adopting hybrid models that combine remote and in-office work. This approach aims to provide flexibility while maintaining some level of in-person collaboration.\n\n## Global Talent Pools\n\nWith remote work, companies can hire talent from anywhere in the world. This opens up opportunities for both employers and employees, creating a truly global workforce.\n\n## Challenges and Solutions\n\nRemote work isn\'t without challenges. Issues like communication, collaboration, and work-life balance require thoughtful solutions. Companies are investing in better tools and processes to address these challenges.\n\n## The Impact on Cities\n\nAs tech workers spread out geographically, we\'re seeing changes in housing markets and local economies. Some tech hubs are experiencing shifts as workers move to more affordable areas.\n\n## Conclusion\n\nRemote work is here to stay in the tech industry, though its exact form will continue to evolve. Companies that embrace flexibility and invest in making remote work successful will have an advantage in attracting and retaining top talent.',
-          excerpt: 'Explore how remote work is reshaping the tech industry and what to expect in the coming years.',
-          status: 'PUBLISHED',
-          publishedAt: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000), // 7 days ago
-          author: {
-            connect: { id: admin.id },
-          },
-          category: {
-            connect: { id: categories[13].id }, // Industry News
-          },
-          tags: {
-            connect: [
-              { id: tags.find(t => t.name === 'Remote Work')?.id },
-              { id: tags.find(t => t.name === 'Opinion')?.id }
-            ].filter(t => t.id !== undefined),
-          },
-          metaTitle: 'The Future of Remote Work in Tech - Trends and Predictions',
-          metaDescription: 'Discover how remote work is evolving in the tech industry and what to expect in the future.',
-          featured: false,
-        },
-      }),
-    ]);
-    console.log('Created sample blog posts');
-  }
+      authorId: admin.id,
+      categoryId: webDevCategory.id,
+      metaTitle: 'TypeScript Best Practices for Large Applications',
+      metaDescription: 'Essential TypeScript best practices for building scalable, maintainable applications. Learn from real-world experience.',
+      keywords: ['typescript', 'best practices', 'large applications', 'type safety'],
+      viewCount: 89,
+    },
+  });
 
-  // Check if we already have marketplace items
-  const existingItems = await prisma.marketplaceItem.count();
-  if (existingItems > 0) {
-    console.log(`${existingItems} marketplace items already exist, skipping marketplace item creation`);
-  } else {
-    // Create sample marketplace items
-    console.log('Creating sample marketplace items...');
-    await Promise.all([
-      prisma.marketplaceItem.create({
+  // Connect tags to posts
+  await prisma.post.update({
+    where: { id: post1.id },
         data: {
-          title: 'Custom Website Development',
-          slug: 'custom-website-development',
-          description: 'Professional website development services using modern technologies. Our team of experienced developers will create a custom website tailored to your specific needs and requirements. We focus on creating responsive, fast, and user-friendly websites that help you achieve your business goals.',
-          price: 999.99,
-          imageUrl: 'https://images.unsplash.com/photo-1547658719-da2b51169166?ixlib=rb-1.2.1&auto=format&fit=crop&w=800&q=80',
+          tags: {
+        connect: [{ id: reactTag.id }],
+      },
+    },
+  });
+
+  await prisma.post.update({
+    where: { id: post2.id },
+        data: {
+          tags: {
+        connect: [{ id: typescriptTag.id }],
+      },
+    },
+  });
+
+  // Create marketplace items
+  const webDevService = await prisma.marketplaceItem.upsert({
+    where: { slug: 'custom-web-development' },
+    update: {},
+    create: {
+      title: 'Custom Web Development',
+      slug: 'custom-web-development',
+      description: 'Professional custom web development services using modern technologies like React, TypeScript, and Node.js. We build scalable, performant web applications tailored to your business needs.',
+      price: 2500.00,
+      imageUrl: '/images/web-development-service.jpg',
           status: 'AVAILABLE',
-          category: {
-            connect: { id: categories[0].id }, // Web Development
-          },
-          seller: {
-            connect: { id: admin.id },
-          },
+      categoryId: servicesCategory.id,
+      sellerId: admin.id,
           specifications: {
-            technologies: ['React', 'Node.js', 'PostgreSQL'],
-            timeline: '4-6 weeks',
-            support: '3 months',
-            includes: [
-              'Custom design',
-              'Responsive layout',
-              'Content management system',
-              'SEO optimization',
-              'Analytics integration'
-            ]
+        technologies: ['React', 'TypeScript', 'Node.js', 'PostgreSQL'],
+        timeline: '4-8 weeks',
+        includes: ['Responsive design', 'SEO optimization', 'Performance optimization', 'Testing']
           },
           features: [
-            'Custom Design',
-            'Responsive Layout',
-            'SEO Optimization',
-            'Performance Optimization',
-            'Content Management System',
-            '3 Months Support'
-          ],
-          tags: {
-            connect: [
-              { id: tags.find(t => t.name === 'React')?.id },
-              { id: tags.find(t => t.name === 'Node.js')?.id },
-              { id: tags.find(t => t.name === 'Responsive Design')?.id }
-            ].filter(t => t.id !== undefined),
-          },
+        'Modern React with TypeScript',
+        'Responsive mobile-first design',
+        'SEO optimized',
+        'Performance optimized',
+        'Comprehensive testing',
+        '3 months support included'
+      ],
           stock: 5,
           featured: true,
         },
-      }),
-      prisma.marketplaceItem.create({
-        data: {
-          title: 'SEO Optimization Package',
-          slug: 'seo-optimization-package',
-          description: 'Comprehensive SEO services to improve your website ranking. Our SEO experts will analyze your website, identify areas for improvement, and implement strategies to increase your visibility in search engines. This package includes keyword research, on-page optimization, content strategy, and monthly reporting.',
-          price: 499.99,
-          imageUrl: 'https://images.unsplash.com/photo-1562577309-4932fdd64cd1?ixlib=rb-1.2.1&auto=format&fit=crop&w=800&q=80',
-          status: 'AVAILABLE',
-          category: {
-            connect: { id: categories[4].id }, // Digital Marketing
-          },
-          seller: {
-            connect: { id: admin.id },
-          },
-          specifications: {
-            duration: '3 months',
-            includes: [
-              'Keyword Research',
-              'On-page Optimization',
-              'Content Strategy',
-              'Monthly Reports',
-              'Competitor Analysis',
-              'Backlink Building'
-            ],
-          },
-          features: [
-            'Keyword Analysis',
-            'Technical SEO',
-            'Content Optimization',
-            'Performance Tracking',
-            'Monthly Reporting',
-            'Competitor Analysis'
-          ],
-          tags: {
-            connect: [
-              { id: tags.find(t => t.name === 'SEO')?.id },
-              { id: tags.find(t => t.name === 'Content Strategy')?.id },
-              { id: tags.find(t => t.name === 'Analytics')?.id }
-            ].filter(t => t.id !== undefined),
-          },
-          stock: 10,
-          featured: true,
-        },
-      }),
-      prisma.marketplaceItem.create({
-        data: {
-          title: 'Mobile App Development',
-          slug: 'mobile-app-development',
-          description: 'Professional mobile app development for iOS and Android. Our team will design and develop a custom mobile application that meets your business needs and provides a great user experience. We use the latest technologies and best practices to ensure your app is fast, reliable, and easy to use.',
-          price: 2499.99,
-          imageUrl: 'https://images.unsplash.com/photo-1551650975-87deedd944c3?ixlib=rb-1.2.1&auto=format&fit=crop&w=800&q=80',
-          status: 'AVAILABLE',
-          category: {
-            connect: { id: categories[1].id }, // Mobile Development
-          },
-          seller: {
-            connect: { id: admin.id },
-          },
-          specifications: {
-            platforms: ['iOS', 'Android'],
-            technologies: ['React Native', 'Firebase'],
-            timeline: '8-12 weeks',
-            support: '6 months',
-          },
-          features: [
-            'Custom Design',
-            'Cross-Platform Development',
-            'User Authentication',
-            'Push Notifications',
-            'Offline Support',
-            'Analytics Integration'
-          ],
-          tags: {
-            connect: [
-              { id: tags.find(t => t.name === 'React')?.id },
-              { id: tags.find(t => t.name === 'Mobile Development')?.id || tags.find(t => t.name === 'React Native')?.id }
-            ].filter(t => t.id !== undefined),
-          },
-          stock: 3,
-          featured: true,
-        },
-      }),
-      prisma.marketplaceItem.create({
-        data: {
-          title: 'Brand Identity Package',
-          slug: 'brand-identity-package',
-          description: 'Complete brand identity design package for startups and small businesses. Our design team will create a cohesive brand identity that reflects your company\'s values and resonates with your target audience. This package includes logo design, color palette, typography, brand guidelines, and basic marketing materials.',
-          price: 1299.99,
-          imageUrl: 'https://images.unsplash.com/photo-1600880292203-757bb62b4baf?ixlib=rb-1.2.1&auto=format&fit=crop&w=800&q=80',
-          status: 'AVAILABLE',
-          category: {
-            connect: { id: categories[8].id }, // Branding
-          },
-          seller: {
-            connect: { id: admin.id },
-          },
-          specifications: {
-            deliverables: [
-              'Logo Design (multiple concepts)',
-              'Color Palette',
-              'Typography Selection',
-              'Brand Guidelines',
-              'Business Cards',
-              'Letterhead',
-              'Email Signature'
-            ],
-            timeline: '3-4 weeks',
-            revisions: '3 rounds',
-          },
-          features: [
-            'Logo Design',
-            'Brand Guidelines',
-            'Color Palette',
-            'Typography',
-            'Business Cards',
-            'Social Media Templates'
-          ],
-          tags: {
-            connect: [
-              { id: tags.find(t => t.name === 'Branding')?.id || tags.find(t => t.name === 'UI Design')?.id },
-              { id: tags.find(t => t.name === 'Design')?.id || tags.find(t => t.name === 'Graphic Design')?.id }
-            ].filter(t => t.id !== undefined),
-          },
-          stock: 8,
-          featured: false,
-        },
-      }),
-    ]);
-    console.log('Created sample marketplace items');
-  }
+  });
 
-  console.log('Seed completed successfully!');
+  const uiuxService = await prisma.marketplaceItem.upsert({
+    where: { slug: 'ui-ux-design-package' },
+    update: {},
+    create: {
+      title: 'UI/UX Design Package',
+      slug: 'ui-ux-design-package',
+      description: 'Complete UI/UX design package including user research, wireframing, prototyping, and final designs. Perfect for startups and businesses looking to create exceptional user experiences.',
+      price: 1800.00,
+      imageUrl: '/images/ui-ux-design-service.jpg',
+          status: 'AVAILABLE',
+      categoryId: designCategory.id,
+      sellerId: admin.id,
+          specifications: {
+        deliverables: ['User research', 'Wireframes', 'High-fidelity designs', 'Interactive prototype'],
+        timeline: '3-6 weeks',
+        tools: ['Figma', 'Adobe Creative Suite', 'Principle']
+          },
+          features: [
+        'User research and personas',
+        'Information architecture',
+        'Wireframes and user flows',
+        'High-fidelity mockups',
+        'Interactive prototypes',
+        'Design system creation'
+      ],
+      stock: 3,
+          featured: true,
+        },
+  });
+
+  // Connect tags to marketplace items
+  await prisma.marketplaceItem.update({
+    where: { id: webDevService.id },
+        data: {
+          tags: {
+        connect: [{ id: reactTag.id }, { id: typescriptTag.id }],
+      },
+    },
+  });
+
+  await prisma.marketplaceItem.update({
+    where: { id: uiuxService.id },
+        data: {
+      tags: {
+        connect: [{ id: uiuxTag.id }],
+      },
+    },
+  });
+
+  // Create testimonials
+  await prisma.testimonial.upsert({
+    where: { id: 'testimonial-1' },
+    update: {},
+    create: {
+      id: 'testimonial-1',
+      content: 'Astralis Agency delivered an exceptional web application that exceeded our expectations. Their attention to detail and technical expertise is outstanding.',
+      rating: 5,
+      authorId: testUser.id,
+      role: 'CEO',
+      company: 'TechStart Inc.',
+      featured: true,
+      published: true,
+      sortOrder: 1,
+    },
+  });
+
+  await prisma.testimonial.upsert({
+    where: { id: 'testimonial-2' },
+    update: {},
+    create: {
+      id: 'testimonial-2',
+      content: 'The UI/UX design work was phenomenal. Our user engagement increased by 40% after implementing their designs.',
+      rating: 5,
+      authorId: testUser.id,
+      role: 'Product Manager',
+      company: 'Digital Solutions Ltd.',
+      featured: true,
+      published: true,
+      sortOrder: 2,
+    },
+  });
+
+  // Create sample contact form entries
+  await prisma.contactForm.create({
+    data: {
+      name: 'John Doe',
+      email: 'john.doe@example.com',
+      message: 'I am interested in your web development services. Could you please provide more information about your pricing and timeline?',
+      status: 'pending',
+    },
+  });
+
+  console.log('✅ Database seeding completed successfully!');
+  console.log('📊 Created:');
+  console.log('  - 2 users (admin and test user)');
+  console.log('  - 3 categories');
+  console.log('  - 3 tags');
+  console.log('  - 2 blog posts');
+  console.log('  - 2 marketplace items');
+  console.log('  - 2 testimonials');
+  console.log('  - 1 contact form entry');
+  console.log('');
+  console.log('🔑 Login credentials:');
+  console.log('  Admin: admin@astralis.one / 45tr4l15');
+  console.log('  User:  user@astralis.one / password123');
 }
 
 main()
-  .catch((e) => {
-    console.error('Error during seeding:', e);
-    process.exit(1);
-  })
-  .finally(async () => {
+  .then(async () => {
     await prisma.$disconnect();
+  })
+  .catch(async (e) => {
+    console.error('❌ Seeding failed:', e);
+    await prisma.$disconnect();
+    process.exit(1);
   }); 

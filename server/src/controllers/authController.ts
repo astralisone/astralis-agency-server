@@ -1,6 +1,8 @@
 import { Request, Response } from 'express';
-import User from '../models/User.js';
-import { generateToken } from '../middleware/auth.js';
+import { prisma } from '../config/database';
+import { generateToken } from '../middleware/auth';
+import bcrypt from 'bcrypt';
+import { getErrorMessage } from '../utils/error-handler';
 
 // Register a new user
 export const register = async (req: Request, res: Response) => {
@@ -8,23 +10,31 @@ export const register = async (req: Request, res: Response) => {
     const { name, email, password } = req.body;
 
     // Check if user already exists
-    const existingUser = await User.findOne({ where: { email } });
+    const existingUser = await prisma.user.findUnique({ 
+      where: { email } 
+    });
+    
     if (existingUser) {
       return res.status(400).json({ message: 'User already exists' });
     }
 
+    // Hash password
+    const hashedPassword = await bcrypt.hash(password, 12);
+
     // Create new user
-    const user = await User.create({
-      name,
-      email,
-      password,
-      role: 'USER', // Default role
+    const user = await prisma.user.create({
+      data: {
+        name,
+        email,
+        password: hashedPassword,
+        role: 'USER', // Default role
+      },
     });
 
     // Generate JWT token
     const token = generateToken(user);
 
-    // Return user data and token
+    // Return user data and token (exclude password)
     res.status(201).json({
       status: 'success',
       data: {
@@ -35,9 +45,9 @@ export const register = async (req: Request, res: Response) => {
         token,
       },
     });
-  } catch (error) {
+  } catch (error: unknown) {
     console.error('Registration error:', error);
-    res.status(500).json({ message: 'Server error' });
+    res.status(500).json({ message: getErrorMessage(error) });
   }
 };
 
@@ -47,13 +57,16 @@ export const login = async (req: Request, res: Response) => {
     const { email, password } = req.body;
 
     // Find user by email
-    const user = await User.findOne({ where: { email } });
+    const user = await prisma.user.findUnique({ 
+      where: { email } 
+    });
+    
     if (!user) {
       return res.status(401).json({ message: 'Invalid credentials' });
     }
 
     // Validate password
-    const isPasswordValid = await User.validatePassword(user, password);
+    const isPasswordValid = await bcrypt.compare(password, user.password);
     if (!isPasswordValid) {
       return res.status(401).json({ message: 'Invalid credentials' });
     }
@@ -61,7 +74,7 @@ export const login = async (req: Request, res: Response) => {
     // Generate JWT token
     const token = generateToken(user);
 
-    // Return user data and token
+    // Return user data and token (exclude password)
     res.status(200).json({
       status: 'success',
       data: {
@@ -72,9 +85,9 @@ export const login = async (req: Request, res: Response) => {
         token,
       },
     });
-  } catch (error) {
+  } catch (error: unknown) {
     console.error('Login error:', error);
-    res.status(500).json({ message: 'Server error' });
+    res.status(500).json({ message: getErrorMessage(error) });
   }
 };
 
@@ -90,9 +103,9 @@ export const getCurrentUser = async (req: Request, res: Response) => {
       status: 'success',
       data: req.user,
     });
-  } catch (error) {
+  } catch (error: unknown) {
     console.error('Get current user error:', error);
-    res.status(500).json({ message: 'Server error' });
+    res.status(500).json({ message: getErrorMessage(error) });
   }
 };
 
@@ -107,23 +120,31 @@ export const createAdmin = async (req: Request, res: Response) => {
     }
 
     // Check if user already exists
-    const existingUser = await User.findOne({ where: { email } });
+    const existingUser = await prisma.user.findUnique({ 
+      where: { email } 
+    });
+    
     if (existingUser) {
       return res.status(400).json({ message: 'User already exists' });
     }
 
+    // Hash password
+    const hashedPassword = await bcrypt.hash(password, 12);
+
     // Create admin user
-    const user = await User.create({
-      name,
-      email,
-      password,
-      role: 'ADMIN',
+    const user = await prisma.user.create({
+      data: {
+        name,
+        email,
+        password: hashedPassword,
+        role: 'ADMIN',
+      },
     });
 
     // Generate JWT token
     const token = generateToken(user);
 
-    // Return user data and token
+    // Return user data and token (exclude password)
     res.status(201).json({
       status: 'success',
       data: {
@@ -134,8 +155,8 @@ export const createAdmin = async (req: Request, res: Response) => {
         token,
       },
     });
-  } catch (error) {
+  } catch (error: unknown) {
     console.error('Create admin error:', error);
-    res.status(500).json({ message: 'Server error' });
+    res.status(500).json({ message: getErrorMessage(error) });
   }
 };

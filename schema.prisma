@@ -194,4 +194,17 @@ model Testimonial {
   updatedAt       DateTime  @updatedAt
 
   @@map("testimonials")
+}
+
+// Contact form model
+model ContactForm {
+  id              String    @id @default(uuid())
+  name            String
+  email           String
+  message         String    @db.Text
+  status          String    @default("pending")
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  @@map("contact_forms")
 } 

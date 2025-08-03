@@ -1,15 +1,5 @@
 import nodemailer, { Transporter } from 'nodemailer';
-
-// Define a ContactFormData interface to match our ContactForm model
-interface ContactFormData {
-  id?: number;
-  name: string;
-  email: string;
-  message: string;
-  status?: string;
-  submittedAt?: Date;
-  updatedAt?: Date;
-}
+import { ContactForm } from '@prisma/client';
 
 const transporter: Transporter = nodemailer.createTransport({
   service: 'gmail',
@@ -28,14 +18,14 @@ export async function sendContactFormEmail(contactForm: ContactFormData) {
       Name: ${contactForm.name}
       Email: ${contactForm.email}
       Message: ${contactForm.message}
-      Submitted: ${contactForm.submittedAt}
+      Submitted: ${contactForm.createdAt}
     `,
     html: `
       <h2>New Contact Form Submission</h2>
       <p><strong>Name:</strong> ${contactForm.name}</p>
       <p><strong>Email:</strong> ${contactForm.email}</p>
       <p><strong>Message:</strong> ${contactForm.message}</p>
-      <p><strong>Submitted:</strong> ${contactForm.submittedAt}</p>
+      <p><strong>Submitted:</strong> ${contactForm.createdAt}</p>
     `,
   };
 

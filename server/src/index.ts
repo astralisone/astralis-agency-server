@@ -32,10 +32,27 @@ prisma.$connect()
   .then(() => console.log('Connected to PostgreSQL via Prisma'))
   .catch((error) => console.error('Prisma connection error:', error));
 
-// Middleware
+// Middleware - Enhanced CORS configuration
 app.use(cors({
-  origin: process.env.CLIENT_URL ? process.env.CLIENT_URL.split(',') : ['http://localhost:3000'],
-  credentials: true
+  origin: process.env.CLIENT_URL ? process.env.CLIENT_URL.split(',') : [
+    'http://localhost:3000', 
+    'http://localhost:3001',
+    'http://127.0.0.1:3000',
+    'http://127.0.0.1:3001'
+  ],
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
+  allowedHeaders: [
+    'Origin',
+    'X-Requested-With',
+    'Content-Type',
+    'Accept',
+    'Authorization',
+    'Cache-Control',
+    'Pragma'
+  ],
+  exposedHeaders: ['Content-Length', 'X-Foo', 'X-Bar'],
+  maxAge: 86400 // 24 hours
 }));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
