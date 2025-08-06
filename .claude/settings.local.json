@@ -26,7 +26,20 @@
       "Bash(npx tsc:*)",
       "Bash(yarn dev:*)",
       "Bash(yarn build)",
-      "Bash(chmod:*)"
+      "Bash(chmod:*)",
+      "Bash(npm install:*)",
+      "Bash(pkill:*)",
+      "Bash(yarn add:*)",
+      "Bash(yarn server:dev:*)",
+      "Bash(npx:*)",
+      "Bash(npm uninstall:*)",
+      "Bash(timeout 10s npm run dev)",
+      "Bash(yarn add:*)",
+      "Bash(node:*)",
+      "Bash(yarn build:*)",
+      "Bash(yarn workspace astralis-agency-server:*)",
+      "Bash(pkill:*)",
+      "Bash(true)"
     ],
     "deny": []
   }

@@ -40,3 +40,44 @@ Connected to PostgreSQL via Prisma
 prisma:info Starting a postgresql pool with 13 connections.
 Connected to PostgreSQL via Prisma
 prisma:query SELECT "public"."users"."id", "public"."users"."email", "public"."users"."name", "public"."users"."password", "public"."users"."avatar", "public"."users"."bio", "public"."users"."role"::text, "public"."users"."createdAt", "public"."users"."updatedAt" FROM "public"."users" WHERE ("public"."users"."email" = $1 AND 1=1) LIMIT $2 OFFSET $3
+[32m[nodemon] restarting due to changes...[39m
+[32m[nodemon] starting `tsx server.ts`[39m
+Database URL: postgresql://gregstarr@localhost:5432/astralis?schema=public
+Server running on port 4000
+Connected to PostgreSQL via Prisma
+[32m[nodemon] restarting due to changes...[39m
+[32m[nodemon] starting `tsx server.ts`[39m
+Database URL: postgresql://gregstarr@localhost:5432/astralis?schema=public
+Server running on port 4000
+Connected to PostgreSQL via Prisma
+[32m[nodemon] restarting due to changes...[39m
+[32m[nodemon] starting `tsx server.ts`[39m
+Database URL: postgresql://gregstarr@localhost:5432/astralis?schema=public
+Server running on port 4000
+Connected to PostgreSQL via Prisma
+SSR: Processing product page for slug: digital-marketing-strategy-consultation
+SSR: Using build file: /Users/gregstarr/projects/dev/AstralisAgencyServer/build/index.html
+SSR: Successfully rendered product page for: Digital Marketing Strategy Consultation
+[32m[nodemon] restarting due to changes...[39m
+[32m[nodemon] starting `tsx server.ts`[39m
+Database URL: postgresql://gregstarr@localhost:5432/astralis?schema=public
+Server running on port 4000
+Connected to PostgreSQL via Prisma
+SSR: Test endpoint hit
+SSR: Processing product page for slug: digital-marketing-strategy-consultation
+SSR: Using build file: /Users/gregstarr/projects/dev/AstralisAgencyServer/build/index.html
+SSR: Successfully rendered product page for: Digital Marketing Strategy Consultation
+SSR: Processing product page for slug: digital-marketing-strategy-consultation
+SSR: Using build file: /Users/gregstarr/projects/dev/AstralisAgencyServer/build/index.html
+SSR: Successfully rendered product page for: Digital Marketing Strategy Consultation
+SSR: Processing product page for slug: digital-marketing-strategy-consultation
+SSR: Using build file: /Users/gregstarr/projects/dev/AstralisAgencyServer/build/index.html
+SSR: Successfully rendered product page for: Digital Marketing Strategy Consultation
+SSR: Processing product page for slug: digital-marketing-strategy-consultation
+SSR: Using build file: /Users/gregstarr/projects/dev/AstralisAgencyServer/build/index.html
+SSR: Successfully rendered product page for: Digital Marketing Strategy Consultation
+prisma:info Starting a postgresql pool with 13 connections.
+Connected to PostgreSQL via Prisma
+Shutting down gracefully...
+Shutting down gracefully...
+Database connections closed.

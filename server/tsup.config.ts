@@ -10,4 +10,24 @@ export default defineConfig({
   clean: true,
   dts: true,
   shims: true,
+  external: [
+    'fsevents', 
+    'react', 
+    'react-dom',
+    '@prisma/client',
+    'bcrypt',
+    'compression',
+    'cors',
+    'dotenv',
+    'express',
+    'express-rate-limit',
+    'express-validator',
+    'helmet',
+    'jsonwebtoken',
+    'nodemailer',
+    'ts-node',
+    'typescript',
+    'zod'
+  ], // External dependencies
+  noExternal: [], // Force bundle certain packages if needed
 })

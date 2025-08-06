@@ -36,10 +36,32 @@ const generateMetaTags = (data: {
   `;
 };
 
-// SSR for marketplace product pages
-router.get('/marketplace/product/:slug', async (req, res) => {
+// Simple SSR test endpoint
+router.get('/ssr-test', (req, res) => {
+  console.log('SSR: Test endpoint hit');
+  res.send(`
+    <!DOCTYPE html>
+    <html lang="en">
+    <head>
+      <title>SSR Test - Working!</title>
+      <meta name="description" content="This page is server-side rendered">
+    </head>
+    <body>
+      <h1>SSR is Working!</h1>
+      <p>This page was rendered on the server at: ${new Date().toISOString()}</p>
+      <p>If you can see this, SSR is functioning correctly.</p>
+      <a href="/marketplace/product/digital-marketing-strategy-consultation">Test Product Page</a>
+    </body>
+    </html>
+  `);
+});
+
+// SSR for marketplace product pages - SPECIFIC ROUTE
+router.get('/marketplace/product/:slug', async (req, res, next) => {
   try {
     const { slug } = req.params;
+    
+    console.log(`SSR: Processing product page for slug: ${slug}`);
     
     const item = await prisma.marketplaceItem.findUnique({
       where: { slug },
@@ -54,16 +76,36 @@ router.get('/marketplace/product/:slug', async (req, res) => {
     });
 
     if (!item || item.status !== 'AVAILABLE' || !item.published) {
-      return res.status(404).send('<h1>Product Not Found</h1>');
+      console.log(`SSR: Product not found or unavailable: ${slug}`);
+      return next(); // Let the client handle 404
     }
 
-    const buildPath = path.resolve(__dirname, '../../../../build/index.html');
-    
-    if (!fs.existsSync(buildPath)) {
-      return res.status(500).send('<h1>Build files not found</h1>');
+    // Try multiple possible paths for the build file
+    const possiblePaths = [
+      path.resolve(__dirname, '../../../../build/index.html'),
+      path.resolve(__dirname, '../../../build/index.html'),
+      path.resolve(__dirname, '../../build/index.html'),
+      path.join(process.cwd(), 'build/index.html'),
+      path.join(process.cwd(), 'client/dist/index.html')
+    ];
+
+    let template = null;
+    let buildPath = null;
+
+    for (const testPath of possiblePaths) {
+      if (fs.existsSync(testPath)) {
+        buildPath = testPath;
+        template = fs.readFileSync(testPath, 'utf-8');
+        break;
+      }
     }
 
-    const template = fs.readFileSync(buildPath, 'utf-8');
+    if (!template) {
+      console.error('SSR: Build file not found in any of the expected locations:', possiblePaths);
+      return next(); // Fall back to client-side rendering
+    }
+
+    console.log(`SSR: Using build file: ${buildPath}`);
 
     const averageRating = item.reviews.length > 0 
       ? item.reviews.reduce((sum, review) => sum + review.rating, 0) / item.reviews.length
@@ -78,17 +120,20 @@ router.get('/marketplace/product/:slug', async (req, res) => {
     });
 
     const html = template.replace('<head>', `<head>${metaTags}`);
+    
+    console.log(`SSR: Successfully rendered product page for: ${item.title}`);
     res.send(html);
     
   } catch (error) {
     console.error('SSR Error:', error);
-    res.status(500).send('<h1>Server Error</h1>');
+    next(); // Fall back to client-side rendering
   }
 });
 
 // Generate sitemap.xml
 router.get('/sitemap.xml', async (req, res) => {
   try {
+    console.log('SSR: Generating sitemap.xml');
     const baseUrl = 'https://astralisone.com';
     
     const [items, posts] = await Promise.all([
@@ -147,6 +192,7 @@ router.get('/sitemap.xml', async (req, res) => {
 
 // Robots.txt
 router.get('/robots.txt', (req, res) => {
+  console.log('SSR: Serving robots.txt');
   const robots = `User-agent: *
 Allow: /
 

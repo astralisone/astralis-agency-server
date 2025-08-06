@@ -6,6 +6,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { ErrorBoundary } from "@/components/error-boundary";
 import { HomePage } from "@/pages/home";
 import { MarketplacePage } from "@/pages/Marketplace.tsx";
+import { MarketplaceProductPage } from "@/pages/marketplace/[slug]";
 import { BlogPage } from "@/pages/Blog.tsx";
 import { ContactPage } from "@/pages/Contact.tsx";
 import { CheckoutPage } from "@/pages/checkout";
@@ -37,6 +38,8 @@ function App() {
             <Route path="/" element={<HomePage />} />
             <Route path="/index.html" element={<HomePage />} />
             <Route path="/marketplace" element={<MarketplacePage />} />
+            <Route path="/marketplace/:slug" element={<MarketplaceProductPage />} />
+            <Route path="/marketplace/product/:slug" element={<MarketplaceProductPage />} />
             <Route path="/blog" element={
               <ErrorBoundary>
                 <BlogPage />
