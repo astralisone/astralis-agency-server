@@ -13,10 +13,6 @@ import marketplaceRoutes from './routes/marketplace.js';
 import testimonialsRoutes from './routes/testimonials.js';
 import adminRoutes from './routes/admin.js';
 
-// Enhanced routes
-import enhancedMarketplaceRoutes from './routes/enhanced/marketplace.js';
-import ssrRoutes from './routes/enhanced/ssr.js';
-
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
@@ -61,8 +57,7 @@ app.use(cors({
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// API Routes (Enhanced routes first to avoid conflicts)
-app.use('/api/marketplace/enhanced', enhancedMarketplaceRoutes);
+// API Routes
 app.use('/api/contact', contactRoutes);
 app.use('/api/health', healthRoutes);
 app.use('/api/auth', authRoutes);
@@ -80,9 +75,6 @@ app.get('/api/health', (req, res) => {
   };
   res.send(healthcheck);
 });
-
-// SEO and SSR routes (before static files)
-app.use('/', ssrRoutes);
 
 // Serve static files from the React app
 app.use(express.static(path.join(__dirname, '../../client/dist')));
@@ -119,4 +111,10 @@ const server = app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
 });
 
-export default app;
+export default app; 
+// Enhanced marketplace routes
+import marketplaceRoutes from './routes/marketplace';
+import ssrRoutes from './routes/ssr';
+
+app.use('/api/marketplace', marketplaceRoutes);
+app.use('/', ssrRoutes);

@@ -1,6 +1,6 @@
 #!/bin/bash
-echo "🏥 Quick Health Check"
-echo "===================="
+echo "🏥 Enhanced Health Check"
+echo "======================="
 
 # Check if server is responding
 if curl -s http://localhost:4000/api/health >/dev/null 2>&1; then
@@ -16,11 +16,18 @@ else
     echo "❌ Database connection issue"
 fi
 
-# Check marketplace API
-if curl -s http://localhost:4000/api/marketplace/products/search >/dev/null 2>&1; then
-    echo "✅ Marketplace API working"
+# Check enhanced marketplace API
+if curl -s "http://localhost:4000/api/marketplace/enhanced/products/search" >/dev/null 2>&1; then
+    echo "✅ Enhanced Marketplace API working"
 else
-    echo "❌ Marketplace API not responding"
+    echo "❌ Enhanced Marketplace API not responding"
+fi
+
+# Check SEO routes
+if curl -s http://localhost:4000/sitemap.xml >/dev/null 2>&1; then
+    echo "✅ SEO routes working"
+else
+    echo "❌ SEO routes not responding"
 fi
 
 echo ""

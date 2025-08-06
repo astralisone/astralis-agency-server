@@ -29,13 +29,10 @@
     "postbuild": "cp -r client/dist/* build/",
     "seed": "tsx prisma/seed.ts",
     "create:admin": "tsx server/src/scripts/createAdmin.ts",
-    "dev:enhanced": "concurrently \"npm run server:dev\" \"npm run client:dev\"",
+    "dev:enhanced": "concurrently \"npm run dev:client\" \"npm run dev:server\"",
     "build:enhanced": "npm run build:client && npm run build:server",
     "migrate:apply": "npx prisma db push && npx prisma generate",
-    "test:marketplace": "cd server && npm run test -- --grep \"marketplace\"",
-    "migrate:enhanced": "npx prisma db push && npx prisma generate",
-    "test:enhanced": "npm run test",
-    "health:check": "./health-check.sh"
+    "test:marketplace": "cd server && npm run test -- --grep \"marketplace\""
   },
   "dependencies": {
     "@prisma/client": "^6.4.1",

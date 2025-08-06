@@ -25,7 +25,8 @@
       "Bash(tsx:*)",
       "Bash(npx tsc:*)",
       "Bash(yarn dev:*)",
-      "Bash(yarn build)"
+      "Bash(yarn build)",
+      "Bash(chmod:*)"
     ],
     "deny": []
   }
