@@ -29,5 +29,5 @@ export default defineConfig({
     'typescript',
     'zod'
   ], // External dependencies
-  noExternal: [], // Force bundle certain packages if needed
+  noExternal: ['none'], // Treat all dependencies as external
 })
