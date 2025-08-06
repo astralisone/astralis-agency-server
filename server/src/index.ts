@@ -112,3 +112,9 @@ const server = app.listen(PORT, () => {
 });
 
 export default app; 
+// Enhanced marketplace routes
+import marketplaceRoutes from './routes/marketplace';
+import ssrRoutes from './routes/ssr';
+
+app.use('/api/marketplace', marketplaceRoutes);
+app.use('/', ssrRoutes);

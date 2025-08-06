@@ -1,16 +1,29 @@
+import { body, param, query, validationResult } from 'express-validator';
 import { Request, Response, NextFunction } from 'express';
 
-export const validateContactForm = (req: Request, res: Response, next: NextFunction) => {
-  const { name, email, message } = req.body;
-
-  if (!name || !email || !message) {
-    return res.status(400).json({ error: 'All fields are required' });
+export const handleValidationErrors = (req: Request, res: Response, next: NextFunction) => {
+  const errors = validationResult(req);
+  if (!errors.isEmpty()) {
+    return res.status(400).json({
+      error: 'Validation failed',
+      details: errors.array()
+    });
   }
-
-  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-  if (!emailRegex.test(email)) {
-    return res.status(400).json({ error: 'Invalid email format' });
-  }
-
   next();
-}; 
+};
+
+export const validateAddToCart = [
+  body('productId').isInt({ min: 1 }).withMessage('Valid product ID is required'),
+  body('quantity').isInt({ min: 1, max: 100 }).withMessage('Quantity must be between 1 and 100'),
+  handleValidationErrors
+];
+
+export const validateCreateOrder = [
+  body('items').isArray({ min: 1 }).withMessage('Order must contain at least one item'),
+  body('items.*.productId').isInt({ min: 1 }),
+  body('items.*.quantity').isInt({ min: 1, max: 100 }),
+  body('shippingAddress.street').trim().isLength({ min: 1 }),
+  body('shippingAddress.city').trim().isLength({ min: 1 }),
+  body('shippingAddress.zipCode').trim().isLength({ min: 1 }),
+  handleValidationErrors
+];

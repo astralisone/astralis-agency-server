@@ -13,9 +13,10 @@ export function formatDate(date: string | Date) {
   }).format(typeof date === 'string' ? new Date(date) : date);
 }
 
-export function formatCurrency(amount: number) {
+export function formatCurrency(amount: number | string) {
+  const numericAmount = typeof amount === 'string' ? parseFloat(amount) : amount;
   return new Intl.NumberFormat('en-US', {
     style: 'currency',
     currency: 'USD',
-  }).format(amount);
+  }).format(numericAmount);
 }

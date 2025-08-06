@@ -3,7 +3,7 @@ export interface MarketplaceItem {
   title: string;
   slug: string;
   description: string;
-  price: number;
+  price: string;
   imageUrl: string;
   status: 'AVAILABLE' | 'SOLD_OUT' | 'COMING_SOON';
   category: {
@@ -24,7 +24,7 @@ export interface MarketplaceItem {
     slug: string;
   }>;
   stock: number;
-  discountPrice: number | null;
+  discountPrice: string | null;
   featured: boolean;
   published: boolean;
   createdAt: string;

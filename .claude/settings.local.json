@@ -1,0 +1,32 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npm config set:*)",
+      "Bash(yarn config get:*)",
+      "Bash(yarn config:*)",
+      "Bash(yarn cache:*)",
+      "Bash(yarn install)",
+      "Bash(find:*)",
+      "Bash(grep:*)",
+      "Bash(rm:*)",
+      "Bash(brew services:*)",
+      "Bash(psql:*)",
+      "Bash(pg_ctl:*)",
+      "Bash(launchctl:*)",
+      "Bash(ls:*)",
+      "Bash(cat:*)",
+      "Bash(/usr/local/opt/postgresql@14/bin/postgres:*)",
+      "Bash(npx prisma db pull:*)",
+      "Bash(./install-astralis-enhancements.sh:*)",
+      "Bash(curl:*)",
+      "Bash(mkdir:*)",
+      "Bash(npm run build:*)",
+      "Bash(mv:*)",
+      "Bash(tsx:*)",
+      "Bash(npx tsc:*)",
+      "Bash(yarn dev:*)",
+      "Bash(yarn build)"
+    ],
+    "deny": []
+  }
+}

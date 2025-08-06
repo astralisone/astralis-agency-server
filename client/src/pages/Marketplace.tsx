@@ -42,7 +42,7 @@ export function MarketplacePage() {
     data: marketplaceData,
     error: marketplaceError,
     isLoading: marketplaceLoading,
-  } = useApi<PaginatedResponse<MarketplaceItem>>(`/marketplace?${queryString}`);
+  } = useApi<PaginatedResponse<MarketplaceItem>>(`/marketplace/products/search?${queryString}`);
 
   // Fetch categories
   const {
@@ -236,7 +236,7 @@ export function MarketplacePage() {
                       </span>
                     </div>
                     <div className="flex flex-wrap gap-2">
-                      {item.tags.map((tag) => (
+                      {item.tags?.map((tag) => (
                         <Badge key={tag.slug} variant="outline">
                           {tag.name}
                         </Badge>

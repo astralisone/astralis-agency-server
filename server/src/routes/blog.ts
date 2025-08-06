@@ -134,10 +134,13 @@ router.get('/', async (req: TypedRequestQuery, res) => {
           title: true,
           slug: true,
           excerpt: true,
+          content: true,
           featuredImage: true,
           status: true,
           publishedAt: true,
           createdAt: true,
+          viewCount: true,
+          featured: true,
           author: {
             select: {
               id: true,
@@ -174,7 +177,7 @@ router.get('/', async (req: TypedRequestQuery, res) => {
     ]);
 
     const response: SuccessResponse<{
-      posts: typeof posts;
+      items: typeof posts;
       pagination: {
         page: number;
         limit: number;
@@ -186,7 +189,7 @@ router.get('/', async (req: TypedRequestQuery, res) => {
     }> = {
       status: 'success',
       data: {
-        posts,
+        items: posts,
         pagination: {
           page: Number(page),
           limit: Number(limit),

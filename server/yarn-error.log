@@ -1,30 +1,21 @@
 Arguments: 
-  /Users/gregstarr/.nvm/versions/node/v20.19.2/bin/node /usr/local/Cellar/yarn/1.22.19/libexec/bin/yarn.js add -D tsup
+  /Users/gregstarr/.nvm/versions/node/v18.20.8/bin/node /usr/local/Cellar/yarn/1.22.19/libexec/bin/yarn.js add tsup
 
 PATH: 
-  /Users/gregstarr/.nvm/versions/node/v20.19.2/bin:/Users/gregstarr/.nvm/versions/node/v18.20.8/bin:/Users/gregstarr/.nvm/versions/node/v19.3.0/bin:/Users/gregstarr/.nvm/versions/node/v18.20.8/bin:/Users/gregstarr/.rvm/gems/ruby-3.0.0/bin:/Users/gregstarr/.rvm/gems/ruby-3.0.0@global/bin:/Users/gregstarr/.rvm/rubies/ruby-3.0.0/bin:/Users/gregstarr/.nvm/versions/node/v18.20.8/bin:/Users/gregstarr/.nvm/versions/node/v18.20.8/bin:/usr/local/bin:/usr/local/sbin:/usr/local/bin:/System/Cryptexes/App/usr/bin:/usr/bin:/bin:/usr/sbin:/sbin:/var/run/com.apple.security.cryptexd/codex.system/bootstrap/usr/local/bin:/var/run/com.apple.security.cryptexd/codex.system/bootstrap/usr/bin:/var/run/com.apple.security.cryptexd/codex.system/bootstrap/usr/appleinternal/bin:/Library/Apple/usr/bin:/Users/gregstarr/.rvm/gems/ruby-3.0.0/bin:/Users/gregstarr/.rvm/gems/ruby-3.0.0@global/bin:/Users/gregstarr/.rvm/rubies/ruby-3.0.0/bin:/Users/gregstarr/.nvm/versions/node/v18.20.8/bin:/usr/local/sbin:/Users/gregstarr/.zinit/polaris/bin:/Users/gregstarr/.local/bin:./node_modules/.bin:/Users/gregstarr/.yarn/bin:/Users/gregstarr/.config/yarn/global/node_modules/.bin:/Users/gregstarr/.bin:/Users/gregstarr/.my_bin:/Users/gregstarr/.console-ninja/.bin:/Users/gregstarr/.amplify/bin:/Users/gregstarr/n/bin:/Users/gregstarr/.rvm/bin:./node_modules/.bin:/Users/gregstarr/.yarn/bin:/Users/gregstarr/.config/yarn/global/node_modules/.bin:/Users/gregstarr/.bin:/Users/gregstarr/.my_bin:/Users/gregstarr/.console-ninja/.bin:/Users/gregstarr/.amplify/bin
+  /Users/gregstarr/.rvm/gems/ruby-3.0.0/bin:/Users/gregstarr/.rvm/gems/ruby-3.0.0@global/bin:/Users/gregstarr/.rvm/rubies/ruby-3.0.0/bin:/Users/gregstarr/.nvm/versions/node/v18.20.8/bin:/Users/gregstarr/.pyenv/shims:/Users/gregstarr/.pyenv/bin:/Users/gregstarr/.nvm/versions/node/v18.20.8/bin:/usr/local/bin:/usr/local/sbin:/usr/local/bin:/System/Cryptexes/App/usr/bin:/usr/bin:/bin:/usr/sbin:/sbin:/var/run/com.apple.security.cryptexd/codex.system/bootstrap/usr/local/bin:/var/run/com.apple.security.cryptexd/codex.system/bootstrap/usr/bin:/var/run/com.apple.security.cryptexd/codex.system/bootstrap/usr/appleinternal/bin:/Library/Apple/usr/bin:/Applications/nmap.app/Contents/Resources/bin:/Applications/ncat.app/Contents/Resources/bin:/Applications/nping.app/Contents/Resources/bin:/Applications/zenmap.app/Contents/Resources/bin:/Users/gregstarr/.rvm/gems/ruby-3.0.0/bin:/Users/gregstarr/.rvm/gems/ruby-3.0.0@global/bin:/Users/gregstarr/.rvm/rubies/ruby-3.0.0/bin:/Users/gregstarr/.pyenv/bin:/Users/gregstarr/.nvm/versions/node/v18.20.8/bin:/usr/local/sbin:/Users/gregstarr/.local/bin:./node_modules/.bin:/Users/gregstarr/.yarn/bin:/Users/gregstarr/.config/yarn/global/node_modules/.bin:/Users/gregstarr/.bin:/Users/gregstarr/.my_bin:/Users/gregstarr/.console-ninja/.bin:/Users/gregstarr/.amplify/bin:/Users/gregstarr/n/bin:/Users/gregstarr/.rvm/bin:./node_modules/.bin:/Users/gregstarr/.yarn/bin:/Users/gregstarr/.config/yarn/global/node_modules/.bin:/Users/gregstarr/.bin:/Users/gregstarr/.my_bin:/Users/gregstarr/.console-ninja/.bin:/Users/gregstarr/.amplify/bin
 
 Yarn version: 
   1.22.19
 
 Node version: 
-  20.19.2
+  18.20.8
 
 Platform: 
   darwin x64
 
 Trace: 
-  Error: http://localhost:4873/cac/-/cac-6.7.14.tgz: Request failed "500 Internal Server Error"
-      at ResponseError.ExtendableBuiltin (/usr/local/Cellar/yarn/1.22.19/libexec/lib/cli.js:696:66)
-      at new ResponseError (/usr/local/Cellar/yarn/1.22.19/libexec/lib/cli.js:802:124)
-      at Request.<anonymous> (/usr/local/Cellar/yarn/1.22.19/libexec/lib/cli.js:66215:16)
-      at Request.emit (node:events:524:28)
-      at module.exports.Request.onRequestResponse (/usr/local/Cellar/yarn/1.22.19/libexec/lib/cli.js:141767:10)
-      at ClientRequest.emit (node:events:524:28)
-      at HTTPParser.parserOnIncomingClient (node:_http_client:702:27)
-      at HTTPParser.parserOnHeadersComplete (node:_http_common:118:17)
-      at Socket.socketOnData (node:_http_client:544:22)
-      at Socket.emit (node:events:524:28)
+  Error: connect ECONNREFUSED 127.0.0.1:4873
+      at TCPConnectWrap.afterConnect [as oncomplete] (node:net:1555:16)
 
 npm manifest: 
   {
